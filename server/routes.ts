@@ -1,6 +1,15 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import {
+  getLatestPowerData,
+  getHistoricalPowerData,
+  getPowerSourceDistribution,
+  getVoltageData,
+  getCurrentData,
+  getPowerFactorData,
+  getFrequencyData
+} from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -18,7 +27,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // KPI data endpoint
   app.get("/api/kpis", async (req, res) => {
     try {
-      const kpis = await storage.getKpis();
+      const latestData = await getLatestPowerData();
+      const kpis = [
+        {
+          id: "kpi1",
+          title: "Current Power",
+          value: `${latestData.kwt.toFixed(2)} kW`,
+          change: ((latestData.kwt - 0) / 0.01) * 100,
+          type: "power"
+        },
+        {
+          id: "kpi2",
+          title: "Grid Import",
+          value: `${latestData.kwh_import.toFixed(2)} kWh`,
+          change: -((latestData.kwh_export - latestData.kwh_import) / latestData.kwh_import) * 100,
+          type: "grid"
+        },
+        {
+          id: "kpi3",
+          title: "Grid Export",
+          value: `${latestData.kwh_export.toFixed(2)} kWh`,
+          change: ((latestData.kwh_export - latestData.kwh_import) / latestData.kwh_export) * 100,
+          type: "export"
+        },
+        {
+          id: "kpi4",
+          title: "Power Factor",
+          value: `${latestData.pft.toFixed(2)}`,
+          change: ((latestData.pft - 0.9) / 0.9) * 100,
+          type: "pf"
+        }
+      ];
       res.json(kpis);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch KPI data" });
@@ -28,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Energy data endpoints
   app.get("/api/energy/daily", async (req, res) => {
     try {
-      const energyData = await storage.getEnergyData();
+      const energyData = await getHistoricalPowerData(24);
       res.json(energyData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch energy data" });
@@ -37,7 +76,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/energy/distribution", async (req, res) => {
     try {
-      const distributionData = await storage.getEnergyDistribution();
+      const distributionData = await getPowerSourceDistribution();
       res.json(distributionData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch energy distribution data" });
@@ -95,8 +134,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/grid/voltage", async (req, res) => {
     try {
-      const voltageData = await storage.getGridVoltage();
-      res.json(voltageData);
+      const voltageData = await getVoltageData();
+      const formattedData = voltageData.map(record => ({
+        time: new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
+        phaseA: record.v1,
+        phaseB: record.v2,
+        phaseC: record.v3
+      }));
+      res.json(formattedData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch grid voltage data" });
     }
@@ -104,8 +149,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/grid/frequency", async (req, res) => {
     try {
-      const frequencyData = await storage.getGridFrequency();
-      res.json(frequencyData);
+      const frequencyData = await getFrequencyData();
+      const formattedData = frequencyData.map(record => ({
+        time: new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true }),
+        frequency: record.hz
+      }));
+      res.json(formattedData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch grid frequency data" });
     }

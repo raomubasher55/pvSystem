@@ -7,6 +7,7 @@ import GeneratorPerformance from "@/components/dashboard/generator-performance";
 import GridStatus from "@/components/dashboard/grid-status";
 import AlertsTable from "@/components/dashboard/alerts-table";
 import EnergyForecast from "@/components/dashboard/energy-forecast";
+import PowerSourceDistribution from "@/components/dashboard/power-source-distribution";
 
 export default function Dashboard() {
   return (
@@ -22,9 +23,10 @@ export default function Dashboard() {
       
       <EnergyChart />
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <SystemStatus />
         <GeneratorPerformance />
+        <PowerSourceDistribution />
       </div>
       
       <GridStatus />
