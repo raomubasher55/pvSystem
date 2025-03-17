@@ -6,8 +6,13 @@ import { Battery, BoltIcon, SunIcon } from "lucide-react";
 
 const COLORS = ["#22c55e", "#eab308", "#ef4444"];
 
+interface DistributionData {
+  name: string;
+  value: number;
+}
+
 export default function PowerSourceDistribution() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<DistributionData[]>({
     queryKey: ["/api/energy/distribution"]
   });
 

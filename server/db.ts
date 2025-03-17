@@ -1,7 +1,8 @@
-import mysql from 'mysql2/promise';
-import { RowDataPacket } from 'mysql2';
+import { neon } from '@neondatabase/serverless';
 
-interface PowerData extends RowDataPacket {
+const sql = neon(process.env.DATABASE_URL!);
+
+interface PowerData {
   v1: number;
   v2: number;
   v3: number;
@@ -35,63 +36,27 @@ interface PowerData extends RowDataPacket {
   time: Date;
 }
 
-// Create connection pool
-const pool = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
-  port: Number(process.env.MYSQL_PORT),
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
-
-// Helper function to get latest power data
-export async function getLatestPowerData(): Promise<PowerData> {
-  const [rows] = await pool.execute<PowerData[]>(
-    `SELECT 
-      v1, v2, v3, v12, v23, v31,
-      a1, a2, a3,
-      kva1, kva2, kva3, kvat,
-      kvar1, kvar2, kvar3, kvart,
-      kw1, kw2, kw3, kwt,
-      pf1, pf2, pf3, pft,
-      hz,
-      kwh_import, kwh_export,
-      kvarh_import, kvarh_export,
-      time
-    FROM power_data 
-    ORDER BY time DESC 
-    LIMIT 1`
-  );
-  if (!rows || rows.length === 0) {
-    throw new Error('No power data available');
-  }
-  return rows[0];
-}
-
-interface PowerHistoryRecord extends RowDataPacket {
+interface PowerHistoryRecord {
   total_power: number;
   kwh_import: number;
   kwh_export: number;
   time: Date;
 }
 
-interface PowerDistributionRecord extends RowDataPacket {
+interface PowerDistributionRecord {
   grid_import: number;
   grid_export: number;
   total_generation: number;
 }
 
-interface VoltageRecord extends RowDataPacket {
+interface VoltageRecord {
   v1: number;
   v2: number;
   v3: number;
   time: Date;
 }
 
-interface CurrentRecord extends RowDataPacket {
+interface CurrentRecord {
   a1: number;
   a2: number;
   a3: number;
@@ -111,34 +76,58 @@ interface FrequencyRecord {
   time: Date;
 }
 
+// Helper function to get latest power data
+export async function getLatestPowerData(): Promise<PowerData> {
+  const result = await sql`
+    SELECT 
+      v1, v2, v3, v12, v23, v31,
+      a1, a2, a3,
+      kva1, kva2, kva3, kvat,
+      kvar1, kvar2, kvar3, kvart,
+      kw1, kw2, kw3, kwt,
+      pf1, pf2, pf3, pft,
+      hz,
+      kwh_import, kwh_export,
+      kvarh_import, kvarh_export,
+      time
+    FROM power_data 
+    ORDER BY time DESC 
+    LIMIT 1
+  `;
+  
+  if (!result || result.length === 0) {
+    throw new Error('No power data available');
+  }
+  return result[0] as PowerData;
+}
+
 // Get historical power data
 export async function getHistoricalPowerData(hours: number = 24): Promise<PowerHistoryRecord[]> {
-  const [rows] = await pool.execute<PowerHistoryRecord[]>(
-    `SELECT 
+  const result = await sql`
+    SELECT 
       kwt as total_power,
       kwh_import,
       kwh_export,
       time
     FROM power_data 
-    WHERE time >= DATE_SUB(NOW(), INTERVAL ? HOUR)
-    ORDER BY time ASC`,
-    [hours]
-  );
-  return rows || [];
+    WHERE time >= NOW() - INTERVAL '${hours} hours'
+    ORDER BY time ASC
+  `;
+  return result as PowerHistoryRecord[];
 }
 
 // Get power source distribution
 export async function getPowerSourceDistribution(): Promise<{ name: string; value: number }[]> {
-  const [rows] = await pool.execute<PowerDistributionRecord[]>(
-    `SELECT 
+  const result = await sql`
+    SELECT 
       SUM(kwh_import) as grid_import,
       SUM(kwh_export) as grid_export,
       SUM(kwt) as total_generation
     FROM power_data 
-    WHERE time >= DATE_SUB(NOW(), INTERVAL 24 HOUR)`
-  );
+    WHERE time >= NOW() - INTERVAL '24 hours'
+  `;
   
-  const data = rows[0] || { grid_import: 0, grid_export: 0, total_generation: 0 };
+  const data = result[0] || { grid_import: 0, grid_export: 0, total_generation: 0 };
   return [
     { name: 'Grid Import', value: data.grid_import || 0 },
     { name: 'Solar/Inverter', value: data.total_generation || 0 },
@@ -148,46 +137,44 @@ export async function getPowerSourceDistribution(): Promise<{ name: string; valu
 
 // Get voltage data
 export async function getVoltageData(): Promise<VoltageRecord[]> {
-  const [rows] = await pool.execute<VoltageRecord[]>(
-    `SELECT v1, v2, v3, time 
+  const result = await sql`
+    SELECT v1, v2, v3, time 
     FROM power_data 
-    WHERE time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-    ORDER BY time ASC`
-  );
-  return rows || [];
+    WHERE time >= NOW() - INTERVAL '1 hour'
+    ORDER BY time ASC
+  `;
+  return result as VoltageRecord[];
 }
 
 // Get current data
 export async function getCurrentData(): Promise<CurrentRecord[]> {
-  const [rows] = await pool.execute<CurrentRecord[]>(
-    `SELECT a1, a2, a3, time 
+  const result = await sql`
+    SELECT a1, a2, a3, time 
     FROM power_data 
-    WHERE time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-    ORDER BY time ASC`
-  );
-  return rows || [];
+    WHERE time >= NOW() - INTERVAL '1 hour'
+    ORDER BY time ASC
+  `;
+  return result as CurrentRecord[];
 }
 
 // Get power factor data
 export async function getPowerFactorData(): Promise<PowerFactorRecord[]> {
-  const [rows] = await pool.execute<PowerFactorRecord[]>(
-    `SELECT pf1, pf2, pf3, pft, time 
+  const result = await sql`
+    SELECT pf1, pf2, pf3, pft, time 
     FROM power_data 
-    WHERE time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-    ORDER BY time ASC`
-  );
-  return rows || [];
+    WHERE time >= NOW() - INTERVAL '1 hour'
+    ORDER BY time ASC
+  `;
+  return result as PowerFactorRecord[];
 }
 
 // Get frequency data
 export async function getFrequencyData(): Promise<FrequencyRecord[]> {
-  const [rows] = await pool.execute<FrequencyRecord[]>(
-    `SELECT hz, time 
+  const result = await sql`
+    SELECT hz, time 
     FROM power_data 
-    WHERE time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
-    ORDER BY time ASC`
-  );
-  return rows || [];
+    WHERE time >= NOW() - INTERVAL '1 hour'
+    ORDER BY time ASC
+  `;
+  return result as FrequencyRecord[];
 }
-
-export default pool;
