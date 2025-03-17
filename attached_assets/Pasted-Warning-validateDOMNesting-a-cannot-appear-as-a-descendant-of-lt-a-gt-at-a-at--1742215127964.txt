@@ -1,0 +1,40 @@
+Warning: validateDOMNesting(...): <a> cannot appear as a descendant of &lt;a&gt;.
+    at a
+    at a
+    at https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=bf453340:337:18
+    at li
+    at ul
+    at div
+    at nav
+    at aside
+    at Sidebar (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/components/layouts/sidebar.tsx:30:22)
+    at div
+    at div
+    at DashboardLayout (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/components/layouts/dashboard-layout.tsx:23:43)
+    at QueryClientProvider (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=bf453340:2805:3)
+    at App
+    at ThemeProvider (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/context/theme-context.tsx:24:33)
+Warning: validateDOMNesting(...): <div> cannot appear as a descendant of &lt;p&gt;.
+    at div
+    at Skeleton (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/components/ui/skeleton.tsx:19:3)
+    at p
+    at div
+    at div
+    at div
+    at _c9 (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/components/ui/card.tsx:114:12)
+    at div
+    at _c (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/components/ui/card.tsx:20:11)
+    at GeneratorPerformance (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/components/dashboard/generator-performance.tsx:25:31)
+    at div
+    at div
+    at Dashboard
+    at Route (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=bf453340:323:16)
+    at Switch (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=bf453340:379:17)
+    at Router
+    at main
+    at div
+    at div
+    at DashboardLayout (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/components/layouts/dashboard-layout.tsx:23:43)
+    at QueryClientProvider (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=bf453340:2805:3)
+    at App
+    at ThemeProvider (https://2ae8795f-ce78-4283-9764-b9b3951526fd-00-3dmhuurq1p6ww.worf.replit.dev/src/context/theme-context.tsx:24:33)
