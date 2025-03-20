@@ -3,38 +3,53 @@ import * as db from './db';
 
 export const storage = {
   async getWeatherData() {
-    // For now returning static weather data since it's not in DB
-    return {
-      id: 'w1',
-      location: 'Austin, TX',
-      temperature: 25,
-      condition: 'Sunny',
-      humidity: 65,
-      windSpeed: 12
-    };
+    try {
+      // For now returning static weather data since it's not in DB
+      return {
+        id: 'w1',
+        location: 'Austin, TX',
+        temperature: 25,
+        condition: 'Sunny',
+        humidity: 65,
+        windSpeed: 12
+      };
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      throw error;
+    }
   },
 
   async getKpis() {
-    const powerData = await db.getAllSourcesLatestData();
-    const totalPower = powerData.reduce((sum, data) => sum + Number(data.kwt), 0);
-    
-    return [
-      { id: 'kpi1', title: 'Current Power', value: `${totalPower.toFixed(2)} kW`, change: 2.5 },
-      { id: 'kpi2', title: 'Today\'s Energy', value: '58.8 kWh', change: -1.2 },
-      { id: 'kpi3', title: 'Power Factor', value: '0.92', change: 0.02 }
-    ];
+    try {
+      const powerData = await db.getAllSourcesLatestData();
+      const totalPower = powerData.reduce((sum, data) => sum + Number(data.kwt), 0);
+      
+      return [
+        { id: 'kpi1', title: 'Current Power', value: `${totalPower.toFixed(2)} kW`, change: 2.5 },
+        { id: 'kpi2', title: 'Today\'s Energy', value: '58.8 kWh', change: -1.2 },
+        { id: 'kpi3', title: 'Power Factor', value: '0.92', change: 0.02 }
+      ];
+    } catch (error) {
+      console.error('Error fetching KPI data:', error);
+      throw error;
+    }
   },
 
   async getSystemComponents() {
-    const powerData = await db.getAllSourcesLatestData();
-    
-    return powerData.map((data, index) => ({
-      id: `sc${index + 1}`,
-      name: `${data.source_type.charAt(0).toUpperCase() + data.source_type.slice(1)} #${index + 1}`,
-      details: `${Number(data.kwt).toFixed(2)} kW`,
-      status: Number(data.kwt) > 0 ? 'Online' : 'Offline',
-      lastChecked: data.time
-    }));
+    try {
+      const powerData = await db.getAllSourcesLatestData();
+      
+      return powerData.map((data, index) => ({
+        id: `sc${index + 1}`,
+        name: `${data.source_type.charAt(0).toUpperCase() + data.source_type.slice(1)} #${index + 1}`,
+        details: `${Number(data.kwt).toFixed(2)} kW`,
+        status: Number(data.kwt) > 0 ? 'Online' : 'Offline',
+        lastChecked: data.time
+      }));
+    } catch (error) {
+      console.error('Error fetching system components:', error);
+      throw error;
+    }
   },
 
   async getGeneratorGroups() {
