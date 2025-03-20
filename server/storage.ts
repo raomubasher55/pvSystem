@@ -1,5 +1,5 @@
 import { 
-  users, type User, type InsertUser, weatherData,
+  users, type User, type InsertUser, weatherData, systemComponents, generatorGroups,
   Weather, Kpi, SystemComponent, GeneratorGroup,
   Alert, ForecastDay, grid1, grid2, generator1, generator2, inverter1, inverter2, alerts, forecastDays,
   type Grid1Data, type Grid2Data, type Generator1Data, type Generator2Data,
@@ -148,9 +148,9 @@ export class DatabaseStorage implements IStorage {
     const [latestInverter2] = await db.select().from(inverter2).orderBy(desc(inverter2.time)).limit(1);
 
     // Calculate total power from each source
-    const gridTotal = (latestGrid1?.kwt || 0) + (latestGrid2?.kwt || 0);
-    const generatorTotal = (latestGenerator1?.kwt || 0) + (latestGenerator2?.kwt || 0);
-    const inverterTotal = (latestInverter1?.kwt || 0) + (latestInverter2?.kwt || 0);
+    const gridTotal = Number(latestGrid1?.kwt || 0) + Number(latestGrid2?.kwt || 0);
+    const generatorTotal = Number(latestGenerator1?.kwt || 0) + Number(latestGenerator2?.kwt || 0);
+    const inverterTotal = Number(latestInverter1?.kwt || 0) + Number(latestInverter2?.kwt || 0);
 
     // Return distribution data
     return [
@@ -256,9 +256,89 @@ export class DatabaseStorage implements IStorage {
   async getGeneratorGroups(): Promise<GeneratorGroup[]> {
     return db.select().from(generatorGroups);
   }
-  async getGeneratorTotalOutput(): Promise<string> { return "0 kW"; }
-  async getGeneratorPerformanceHourly(): Promise<any[]> { return []; }
-  async getGeneratorTemperature(): Promise<any[]> { return []; }
+  async getGeneratorTotalOutput(): Promise<string> {
+    // Calculate total power output from generator sources
+    const [latestGenerator1] = await db.select().from(generator1).orderBy(desc(generator1.time)).limit(1);
+    const [latestGenerator2] = await db.select().from(generator2).orderBy(desc(generator2.time)).limit(1);
+    
+    const totalOutput = Number(latestGenerator1?.kwt || 0) + Number(latestGenerator2?.kwt || 0);
+    return `${totalOutput.toFixed(1)} kW`;
+  }
+  
+  async getGeneratorPerformanceHourly(): Promise<any[]> {
+    // Get generator data for the past 24 hours
+    const past24Hours = new Date();
+    past24Hours.setHours(past24Hours.getHours() - 24);
+    
+    const gen1Data = await db.select().from(generator1)
+      .where(sql`time >= ${past24Hours}`)
+      .orderBy(generator1.time);
+      
+    // Process the data to hourly intervals
+    const hourlyData = [];
+    const hours = 24;
+    
+    for (let i = 0; i < hours; i++) {
+      const hourTime = new Date();
+      hourTime.setHours(hourTime.getHours() - hours + i);
+      
+      // Find records for this hour
+      const hourStart = new Date(hourTime);
+      hourStart.setMinutes(0, 0, 0);
+      const hourEnd = new Date(hourTime);
+      hourEnd.setMinutes(59, 59, 999);
+      
+      // Filter generator data for this hour
+      const hourlyRecords = gen1Data.filter(
+        record => record.time >= hourStart && record.time <= hourEnd
+      );
+      
+      // Calculate average power for this hour
+      const avgPower = hourlyRecords.length > 0
+        ? hourlyRecords.reduce((sum, record) => sum + Number(record.kwt || 0), 0) / hourlyRecords.length
+        : 0;
+      
+      // Format the time label (e.g., "14:00")
+      const timeLabel = hourTime.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: false 
+      });
+      
+      hourlyData.push({
+        time: timeLabel,
+        output: avgPower
+      });
+    }
+    
+    return hourlyData;
+  }
+  
+  async getGeneratorTemperature(): Promise<any[]> {
+    // Generate simulated temperature data based on generator power output
+    const [latestGenerator] = await db.select().from(generator1).orderBy(desc(generator1.time)).limit(1);
+    
+    if (!latestGenerator) {
+      return [];
+    }
+    
+    // Calculate temperature based on power output (simulation)
+    const baseTempEngine = 80; // base engine temperature (°C)
+    const baseTempOil = 60;    // base oil temperature (°C)
+    const baseTempExhaust = 120; // base exhaust temperature (°C)
+    
+    // Power output affects temperature (simulation)
+    const loadFactor = Number(latestGenerator.kwt) / 100; // assuming 100kW is maximum capacity
+    const engineTemp = baseTempEngine + (loadFactor * 30);
+    const oilTemp = baseTempOil + (loadFactor * 20);
+    const exhaustTemp = baseTempExhaust + (loadFactor * 200);
+    
+    return [
+      { name: "Engine", value: engineTemp },
+      { name: "Oil", value: oilTemp },
+      { name: "Exhaust", value: exhaustTemp }
+    ];
+  }
   async getGridStatus(): Promise<any> {
     const [latestGrid] = await db.select().from(grid1)
       .orderBy(desc(grid1.time))
@@ -281,15 +361,245 @@ export class DatabaseStorage implements IStorage {
       chartData: [], 
     };
   }
-  async getGridVoltage(): Promise<any[]> { return []; }
-  async getGridFrequency(): Promise<any[]> { return []; }
-  async getAlerts(): Promise<Alert[]> { return []; }
-  async getForecastDays(): Promise<ForecastDay[]> { return []; }
-  async getWeeklyForecast(): Promise<{ weeklyTotal: string; weeklyChange: number }> {
-    return { weeklyTotal: "0 kWh", weeklyChange: 0 };
+  async getGridVoltage(): Promise<any[]> {
+    // Get voltage data for the past 24 hours
+    const past24Hours = new Date();
+    past24Hours.setHours(past24Hours.getHours() - 24);
+    
+    const voltageData = await db.select({
+      v1: grid1.v1,
+      v2: grid1.v2,
+      v3: grid1.v3,
+      time: grid1.time
+    })
+    .from(grid1)
+    .where(sql`time >= ${past24Hours}`)
+    .orderBy(grid1.time);
+    
+    // Transform data for chart display (hourly intervals)
+    const hourlyData = [];
+    const hours = 24;
+    
+    for (let i = 0; i < hours; i++) {
+      const hourTime = new Date();
+      hourTime.setHours(hourTime.getHours() - hours + i);
+      
+      // Find records for this hour
+      const hourStart = new Date(hourTime);
+      hourStart.setMinutes(0, 0, 0);
+      const hourEnd = new Date(hourTime);
+      hourEnd.setMinutes(59, 59, 999);
+      
+      // Filter voltage data for this hour
+      const hourlyRecords = voltageData.filter(
+        record => record.time >= hourStart && record.time <= hourEnd
+      );
+      
+      if (hourlyRecords.length > 0) {
+        // Calculate averages
+        const v1Avg = hourlyRecords.reduce((sum, record) => sum + Number(record.v1 || 0), 0) / hourlyRecords.length;
+        const v2Avg = hourlyRecords.reduce((sum, record) => sum + Number(record.v2 || 0), 0) / hourlyRecords.length;
+        const v3Avg = hourlyRecords.reduce((sum, record) => sum + Number(record.v3 || 0), 0) / hourlyRecords.length;
+        
+        // Format the time label
+        const timeLabel = hourTime.toLocaleTimeString('en-US', { 
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false 
+        });
+        
+        hourlyData.push({
+          time: timeLabel,
+          v1: v1Avg,
+          v2: v2Avg,
+          v3: v3Avg
+        });
+      }
+    }
+    
+    return hourlyData;
   }
-  async getWeatherForecast(): Promise<any[]> { return []; }
-  async getSolarRadiation(): Promise<any[]> { return []; }
+  
+  async getGridFrequency(): Promise<any[]> {
+    // Get frequency data for the past 24 hours
+    const past24Hours = new Date();
+    past24Hours.setHours(past24Hours.getHours() - 24);
+    
+    const frequencyData = await db.select({
+      hz: grid1.hz,
+      time: grid1.time
+    })
+    .from(grid1)
+    .where(sql`time >= ${past24Hours}`)
+    .orderBy(grid1.time);
+    
+    // Transform data for chart display (hourly intervals)
+    const hourlyData = [];
+    const hours = 24;
+    
+    for (let i = 0; i < hours; i++) {
+      const hourTime = new Date();
+      hourTime.setHours(hourTime.getHours() - hours + i);
+      
+      // Find records for this hour
+      const hourStart = new Date(hourTime);
+      hourStart.setMinutes(0, 0, 0);
+      const hourEnd = new Date(hourTime);
+      hourEnd.setMinutes(59, 59, 999);
+      
+      // Filter frequency data for this hour
+      const hourlyRecords = frequencyData.filter(
+        record => record.time >= hourStart && record.time <= hourEnd
+      );
+      
+      if (hourlyRecords.length > 0) {
+        // Calculate average frequency
+        const hzAvg = hourlyRecords.reduce((sum, record) => sum + Number(record.hz || 0), 0) / hourlyRecords.length;
+        
+        // Format the time label
+        const timeLabel = hourTime.toLocaleTimeString('en-US', { 
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false 
+        });
+        
+        hourlyData.push({
+          time: timeLabel,
+          frequency: hzAvg
+        });
+      }
+    }
+    
+    return hourlyData;
+  }
+  
+  async getAlerts(): Promise<Alert[]> {
+    return db.select().from(alerts);
+  }
+  
+  async getForecastDays(): Promise<ForecastDay[]> {
+    return db.select().from(forecastDays);
+  }
+  
+  async getWeeklyForecast(): Promise<{ weeklyTotal: string; weeklyChange: number }> {
+    // Get forecast data
+    const forecast = await this.getForecastDays();
+    
+    if (forecast.length === 0) {
+      return { weeklyTotal: "0 kWh", weeklyChange: 0 };
+    }
+    
+    // Calculate total forecasted energy
+    let totalEnergy = 0;
+    for (const day of forecast) {
+      // Extract numeric value from forecast string (e.g., "250kWh" -> 250)
+      const match = day.forecast.match(/(\d+)/);
+      if (match) {
+        totalEnergy += Number(match[1]);
+      }
+    }
+    
+    // Calculate average change
+    const avgChange = forecast.reduce((sum, day) => sum + Number(day.comparison), 0) / forecast.length;
+    
+    return {
+      weeklyTotal: `${totalEnergy} kWh`,
+      weeklyChange: Number(avgChange.toFixed(1))
+    };
+  }
+  
+  async getWeatherForecast(): Promise<any[]> {
+    // Get weather data for forecasting
+    const weatherData = await this.getWeatherData();
+    
+    if (weatherData.length === 0) {
+      return [];
+    }
+    
+    // Generate a 5-day forecast based on current weather
+    const forecast = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 5; i++) {
+      const forecastDate = new Date(now);
+      forecastDate.setDate(now.getDate() + i);
+      
+      const dateString = forecastDate.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+      
+      // Use random weather condition from the existing weather data
+      const randomWeather = weatherData[Math.floor(Math.random() * weatherData.length)];
+      
+      forecast.push({
+        date: dateString,
+        condition: randomWeather.condition,
+        temperature: randomWeather.temperature,
+        precipitation: Math.random() * 20
+      });
+    }
+    
+    return forecast;
+  }
+  
+  async getSolarRadiation(): Promise<any[]> {
+    // Get weather data for solar radiation estimates
+    const weatherData = await this.getWeatherData();
+    
+    if (weatherData.length === 0) {
+      return [];
+    }
+    
+    // Generate hourly solar radiation data based on weather conditions
+    const hourlyData = [];
+    const hours = 24;
+    
+    // Base radiation levels based on weather condition
+    const radiationMap: Record<string, number> = {
+      "Sunny": 900,
+      "Partly Cloudy": 600,
+      "Cloudy": 300,
+      "Rainy": 100
+    };
+    
+    for (let i = 0; i < hours; i++) {
+      const hourTime = new Date();
+      hourTime.setHours(hourTime.getHours() - hours + i);
+      
+      // Format the time label
+      const timeLabel = hourTime.toLocaleTimeString('en-US', { 
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false 
+      });
+      
+      // Time of day affects radiation (peak at noon)
+      const hour = hourTime.getHours();
+      let timeMultiplier = 0;
+      
+      if (hour >= 6 && hour <= 18) {
+        // Daylight hours (6am to 6pm)
+        // Calculate peak at noon (hour 12)
+        timeMultiplier = 1 - Math.abs(hour - 12) / 6;
+      }
+      
+      // Use random weather from the data
+      const randomWeather = weatherData[Math.floor(Math.random() * weatherData.length)];
+      const baseRadiation = radiationMap[randomWeather.condition] || 300;
+      
+      // Calculate radiation value
+      const radiation = Math.round(baseRadiation * timeMultiplier);
+      
+      hourlyData.push({
+        time: timeLabel,
+        radiation: radiation
+      });
+    }
+    
+    return hourlyData;
+  }
 }
 
 export const storage = new DatabaseStorage();
