@@ -17,15 +17,15 @@ export default function Dashboard() {
 
   const handleRefresh = () => {
     // Invalidate and refetch relevant dashboard queries
-    queryClient.invalidateQueries({ queryKey: ['/api/energy/chart'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/system/status'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/generator/performance'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/energy/distribution'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/grid/status'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/alerts'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/energy/forecast'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/weather'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/kpis'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/energy/chart', timeRange] });
+    queryClient.invalidateQueries({ queryKey: ['/api/system/status', timeRange] });
+    queryClient.invalidateQueries({ queryKey: ['/api/generator/performance', timeRange] });
+    queryClient.invalidateQueries({ queryKey: ['/api/energy/distribution', timeRange] });
+    queryClient.invalidateQueries({ queryKey: ['/api/grid/status', timeRange] });
+    queryClient.invalidateQueries({ queryKey: ['/api/alerts', timeRange] });
+    queryClient.invalidateQueries({ queryKey: ['/api/energy/forecast', timeRange] });
+    queryClient.invalidateQueries({ queryKey: ['/api/weather'] }); // Weather doesn't use timeRange
+    queryClient.invalidateQueries({ queryKey: ['/api/kpis'] }); // KPIs don't use timeRange
   };
 
   const handleTimeRangeChange = (newTimeRange: string) => {
@@ -53,14 +53,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <SystemStatus timeRange={timeRange} />
         <GeneratorPerformance timeRange={timeRange} />
-        <PowerSourceDistribution />
+        <PowerSourceDistribution timeRange={timeRange} />
       </div>
       
       <GridStatus timeRange={timeRange} />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <AlertsTable />
-        <EnergyForecast />
+        <AlertsTable timeRange={timeRange} />
+        <EnergyForecast timeRange={timeRange} />
       </div>
     </div>
   );

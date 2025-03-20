@@ -4,13 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Sun, CloudSun, Cloud } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function EnergyForecast() {
+interface EnergyForecastProps {
+  timeRange?: string;
+}
+
+export default function EnergyForecast({ timeRange = 'last-24h' }: EnergyForecastProps) {
   const { data, isLoading } = useQuery<{
     days: ForecastDay[],
     weeklyTotal: string,
     weeklyChange: number
   }>({
-    queryKey: ['/api/energy/forecast'],
+    queryKey: ['/api/energy/forecast', timeRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/energy/forecast?timeRange=${timeRange}`);
+      if (!res.ok) throw new Error('Failed to fetch energy forecast');
+      return res.json();
+    }
   });
 
   const getWeatherIcon = (weather: string) => {

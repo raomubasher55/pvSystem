@@ -6,9 +6,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function AlertsTable() {
+interface AlertsTableProps {
+  timeRange?: string;
+}
+
+export default function AlertsTable({ timeRange = 'last-24h' }: AlertsTableProps) {
   const { data, isLoading } = useQuery<Alert[]>({
-    queryKey: ['/api/alerts'],
+    queryKey: ['/api/alerts', timeRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/alerts?timeRange=${timeRange}`);
+      if (!res.ok) throw new Error('Failed to fetch alerts');
+      return res.json();
+    }
   });
 
   const getStatusClasses = (status: string) => {
