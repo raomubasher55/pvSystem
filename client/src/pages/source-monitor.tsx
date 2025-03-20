@@ -24,7 +24,7 @@ import DashboardHeader from '@/components/layouts/dashboard-header';
 import { Battery, Activity, BatteryCharging, Sun, Zap } from 'lucide-react';
 
 export const SourceMonitor = () => {
-  const [location, params] = useLocation();
+  const [location] = useLocation();
   const [timeRange, setTimeRange] = useState('last-24h');
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
@@ -32,8 +32,9 @@ export const SourceMonitor = () => {
   } | null>(null);
   const queryClient = useQueryClient();
   
-  // Get source type from route parameters or query parameters or default to inverter1
-  const sourceId = params?.sourceId;
+  // Get source type from route path or query parameters or default to inverter1
+  const sourceIdMatch = location.match(/\/sources\/([^\/]+)/);
+  const sourceId = sourceIdMatch ? sourceIdMatch[1] : null;
   const sourceType = sourceId || new URLSearchParams(window.location.search).get('source') || 'inverter1';
   
   // Format display name
