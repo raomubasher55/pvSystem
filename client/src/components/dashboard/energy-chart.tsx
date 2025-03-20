@@ -104,7 +104,7 @@ export default function EnergyChart({ timeRange: externalTimeRange }: EnergyChar
           <div className="flex items-center gap-3">
             <div className="flex items-center mr-4">
               <Select 
-                value={timeRange} 
+                value={timeRange.startsWith('custom:') ? 'custom' : timeRange} 
                 onValueChange={(value) => setLocalTimeRange(value)}
               >
                 <SelectTrigger className="w-[150px] h-8 text-sm">
@@ -114,6 +114,7 @@ export default function EnergyChart({ timeRange: externalTimeRange }: EnergyChar
                   <SelectItem value="last-24h">Last 24 hours</SelectItem>
                   <SelectItem value="last-7d">Last 7 days</SelectItem>
                   <SelectItem value="last-30d">Last 30 days</SelectItem>
+                  <SelectItem value="custom">Custom range</SelectItem>
                 </SelectContent>
               </Select>
             </div>
