@@ -92,7 +92,7 @@ interface FrequencyRecord {
   time: Date;
 }
 
-export async function getLatestPowerData(): Promise<PowerData> {
+export async function getLatestPowerData(source: string): Promise<PowerData> {
   const [rows] = await pool.query(
     `SELECT 
       v1, v2, v3, v12, v23, v31,
@@ -105,9 +105,11 @@ export async function getLatestPowerData(): Promise<PowerData> {
       kwh_import, kwh_export,
       kvarh_import, kvarh_export,
       time
-    FROM china_3qey 
+    FROM power_source_data 
+    WHERE source_type = ?
     ORDER BY time DESC 
-    LIMIT 1`
+    LIMIT 1`,
+    [source]
   );
   
   if (!rows || (rows as any[]).length === 0) {
