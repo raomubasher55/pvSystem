@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import {
   getLatestPowerData,
+  getAllSourcesLatestData,
   getHistoricalPowerData,
   getPowerSourceDistribution,
   getVoltageData,
@@ -24,52 +25,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // KPI data endpoint
+  // Updated KPI data endpoint to show data from all sources
   app.get("/api/kpis", async (req, res) => {
     try {
-      const latestData = await getLatestPowerData();
-      const kpis = [
-        {
-          id: "kpi1",
-          title: "Current Power",
-          value: `${latestData.kwt.toFixed(2)} kW`,
-          change: ((latestData.kwt - 0) / 0.01) * 100,
-          type: "power"
-        },
-        {
-          id: "kpi2",
-          title: "Grid Import",
-          value: `${latestData.kwh_import.toFixed(2)} kWh`,
-          change: -((latestData.kwh_export - latestData.kwh_import) / latestData.kwh_import) * 100,
-          type: "grid"
-        },
-        {
-          id: "kpi3",
-          title: "Grid Export",
-          value: `${latestData.kwh_export.toFixed(2)} kWh`,
-          change: ((latestData.kwh_export - latestData.kwh_import) / latestData.kwh_export) * 100,
-          type: "export"
-        },
-        {
-          id: "kpi4",
-          title: "Power Factor",
-          value: `${latestData.pft.toFixed(2)}`,
-          change: ((latestData.pft - 0.9) / 0.9) * 100,
-          type: "pf"
-        }
-      ];
-      // console.log(kpis)
+      const allSourcesData = await getAllSourcesLatestData();
+      const kpis = [];
+
+      // Add total system power KPI
+      const totalPower = allSourcesData.reduce((sum, source) => sum + source.kwt, 0);
+      kpis.push({
+        id: "kpi1",
+        title: "Total System Power",
+        value: `${totalPower.toFixed(2)} kW`,
+        change: 0, // Calculate change if historical data available
+        type: "power"
+      });
+
+      // Add source-specific KPIs
+      allSourcesData.forEach(source => {
+        kpis.push({
+          id: `kpi_${source.source_type}`,
+          title: `${source.source_type.charAt(0).toUpperCase() + source.source_type.slice(1)} Power`,
+          value: `${source.kwt.toFixed(2)} kW`,
+          change: ((source.kwh_export - source.kwh_import) / source.kwh_import) * 100,
+          type: source.source_type
+        });
+      });
+
       res.json(kpis);
     } catch (error) {
-      // console.log(error)
       res.status(500).json({ error: error });
     }
   });
 
-  // Energy data endpoints
+  // Source-specific data endpoint
+  app.get("/api/source/:type", async (req, res) => {
+    try {
+      const sourceType = req.params.type;
+      const data = await getLatestPowerData(sourceType);
+      res.json(data);
+    } catch (error) {
+      res.status(500).json({ error: `Failed to fetch ${req.params.type} data` });
+    }
+  });
+
+  // Updated energy data endpoints
   app.get("/api/energy/daily", async (req, res) => {
     try {
-      const energyData = await getHistoricalPowerData(24);
+      const sourceType = req.query.source as string || 'grid';
+      const energyData = await getHistoricalPowerData(sourceType, 24);
       res.json(energyData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch energy data" });
