@@ -1,8 +1,6 @@
 import { db, pool } from "./db";
 import { 
-  grid1, grid2, generator1, generator2, inverter1, inverter2, 
-  weatherData, kpis, systemComponents, generatorGroups, 
-  alerts, forecastDays, gridData, users
+  grid1, grid2, generator1, generator2, inverter1, inverter2
 } from "@shared/schema";
 
 // Helper to create sample time-series data
@@ -58,102 +56,8 @@ function generatePowerTimeSeriesData(count: number, baseValue: number, variance:
   return data;
 }
 
-// Generate and seed weather data
-async function seedWeatherData() {
-  const locations = ["Site 1", "Site 2", "Site 3"];
-  const conditions = ["Sunny", "Partly Cloudy", "Cloudy", "Rainy"];
-  const solarIntensity = ["High", "Medium", "Low"];
-  
-  for (const location of locations) {
-    await db.insert(weatherData).values({
-      location,
-      temperature: 25 + Math.random() * 10 - 5,
-      condition: conditions[Math.floor(Math.random() * conditions.length)],
-      humidity: 40 + Math.random() * 30,
-      wind: Math.random() * 20,
-      uvIndex: Math.random() * 10,
-      visibility: 5 + Math.random() * 5,
-      solarIntensity: solarIntensity[Math.floor(Math.random() * solarIntensity.length)]
-    });
-  }
-}
-
-// Generate and seed system components
-async function seedSystemComponents() {
-  const components = [
-    { name: "Main Transformer", details: "500kVA, 11kV/415V", status: "Online", output: "450kVA", type: "transformer" },
-    { name: "Backup Transformer", details: "250kVA, 11kV/415V", status: "Standby", output: "0kVA", type: "transformer" },
-    { name: "Grid Connection 1", details: "11kV Line", status: "Active", output: "180kW", type: "connection" },
-    { name: "Grid Connection 2", details: "11kV Line", status: "Active", output: "120kW", type: "connection" },
-    { name: "Main Distribution Panel", details: "600A", status: "Normal", output: "450A", type: "panel" },
-    { name: "Emergency Panel", details: "200A", status: "Normal", output: "0A", type: "panel" }
-  ];
-  
-  for (const component of components) {
-    await db.insert(systemComponents).values(component);
-  }
-}
-
-// Generate and seed generator groups
-async function seedGeneratorGroups() {
-  const groups = [
-    { name: "Generator Group A", output: "120kW", efficiency: 92 },
-    { name: "Generator Group B", output: "80kW", efficiency: 88 },
-    { name: "Generator Group C", output: "50kW", efficiency: 85 }
-  ];
-  
-  for (const group of groups) {
-    await db.insert(generatorGroups).values(group);
-  }
-}
-
-// Generate and seed alerts
-async function seedAlerts() {
-  const alertData = [
-    { status: "Critical", description: "Grid voltage fluctuation detected", component: "Grid Connection 1", time: "10 minutes ago" },
-    { status: "Warning", description: "Generator temperature rising", component: "Generator Group A", time: "1 hour ago" },
-    { status: "Info", description: "Solar panel cleaning scheduled", component: "Inverter 1", time: "3 hours ago" },
-    { status: "Resolved", description: "Battery bank connection issue", component: "Battery Storage", time: "1 day ago" }
-  ];
-  
-  for (const alert of alertData) {
-    await db.insert(alerts).values(alert);
-  }
-}
-
-// Generate and seed forecast days
-async function seedForecastDays() {
-  const today = new Date();
-  const days = [];
-  
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(today);
-    date.setDate(date.getDate() + i);
-    
-    const dateString = date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-    
-    const weatherConditions = ["Sunny", "Partly Cloudy", "Cloudy", "Rainy"];
-    const weather = weatherConditions[Math.floor(Math.random() * weatherConditions.length)];
-    
-    const forecast = `${Math.floor(250 + Math.random() * 100)}kWh`;
-    const comparison = Math.random() * 20 - 10; // -10% to +10%
-    
-    days.push({
-      date: dateString,
-      weather,
-      forecast,
-      comparison
-    });
-  }
-  
-  for (const day of days) {
-    await db.insert(forecastDays).values(day);
-  }
-}
+// All previous seed functions for other tables are removed as requested
+// We'll only keep the power source tables (grid1, grid2, generator1, generator2, inverter1, inverter2)
 
 // Main seed function
 async function seedDatabase() {
@@ -199,42 +103,227 @@ async function seedDatabase() {
     ];
     
     // Bulk insert for each source
+    console.log("Seeding grid1 data...");
     for (const item of grid1Data) {
-      await db.insert(grid1).values(item);
+      await db.insert(grid1).values({
+        ...item,
+        v1: String(item.v1),
+        v2: String(item.v2),
+        v3: String(item.v3),
+        v12: String(item.v12),
+        v23: String(item.v23),
+        v31: String(item.v31),
+        a1: String(item.a1),
+        a2: String(item.a2),
+        a3: String(item.a3),
+        kva1: String(item.kva1),
+        kva2: String(item.kva2),
+        kva3: String(item.kva3),
+        kvat: String(item.kvat),
+        kvar1: String(item.kvar1),
+        kvar2: String(item.kvar2),
+        kvar3: String(item.kvar3),
+        kvart: String(item.kvart),
+        kw1: String(item.kw1),
+        kw2: String(item.kw2),
+        kw3: String(item.kw3),
+        kwt: String(item.kwt),
+        pf1: String(item.pf1),
+        pf2: String(item.pf2),
+        pf3: String(item.pf3),
+        pft: String(item.pft),
+        hz: String(item.hz),
+        kwh_import: String(item.kwh_import),
+        kwh_export: String(item.kwh_export),
+        kvarh_import: String(item.kvarh_import),
+        kvarh_export: String(item.kvarh_export)
+      });
     }
     
+    console.log("Seeding grid2 data...");
     for (const item of grid2Data) {
-      await db.insert(grid2).values(item);
+      await db.insert(grid2).values({
+        ...item,
+        v1: String(item.v1),
+        v2: String(item.v2),
+        v3: String(item.v3),
+        v12: String(item.v12),
+        v23: String(item.v23),
+        v31: String(item.v31),
+        a1: String(item.a1),
+        a2: String(item.a2),
+        a3: String(item.a3),
+        kva1: String(item.kva1),
+        kva2: String(item.kva2),
+        kva3: String(item.kva3),
+        kvat: String(item.kvat),
+        kvar1: String(item.kvar1),
+        kvar2: String(item.kvar2),
+        kvar3: String(item.kvar3),
+        kvart: String(item.kvart),
+        kw1: String(item.kw1),
+        kw2: String(item.kw2),
+        kw3: String(item.kw3),
+        kwt: String(item.kwt),
+        pf1: String(item.pf1),
+        pf2: String(item.pf2),
+        pf3: String(item.pf3),
+        pft: String(item.pft),
+        hz: String(item.hz),
+        kwh_import: String(item.kwh_import),
+        kwh_export: String(item.kwh_export),
+        kvarh_import: String(item.kvarh_import),
+        kvarh_export: String(item.kvarh_export)
+      });
     }
     
+    console.log("Seeding generator1 data...");
     for (const item of generator1Data) {
-      await db.insert(generator1).values(item);
+      await db.insert(generator1).values({
+        ...item,
+        v1: String(item.v1),
+        v2: String(item.v2),
+        v3: String(item.v3),
+        v12: String(item.v12),
+        v23: String(item.v23),
+        v31: String(item.v31),
+        a1: String(item.a1),
+        a2: String(item.a2),
+        a3: String(item.a3),
+        kva1: String(item.kva1),
+        kva2: String(item.kva2),
+        kva3: String(item.kva3),
+        kvat: String(item.kvat),
+        kvar1: String(item.kvar1),
+        kvar2: String(item.kvar2),
+        kvar3: String(item.kvar3),
+        kvart: String(item.kvart),
+        kw1: String(item.kw1),
+        kw2: String(item.kw2),
+        kw3: String(item.kw3),
+        kwt: String(item.kwt),
+        pf1: String(item.pf1),
+        pf2: String(item.pf2),
+        pf3: String(item.pf3),
+        pft: String(item.pft),
+        hz: String(item.hz),
+        kwh_import: String(item.kwh_import),
+        kwh_export: String(item.kwh_export),
+        kvarh_import: String(item.kvarh_import),
+        kvarh_export: String(item.kvarh_export)
+      });
     }
     
+    console.log("Seeding generator2 data...");
     for (const item of generator2Data) {
-      await db.insert(generator2).values(item);
+      await db.insert(generator2).values({
+        ...item,
+        v1: String(item.v1),
+        v2: String(item.v2),
+        v3: String(item.v3),
+        v12: String(item.v12),
+        v23: String(item.v23),
+        v31: String(item.v31),
+        a1: String(item.a1),
+        a2: String(item.a2),
+        a3: String(item.a3),
+        kva1: String(item.kva1),
+        kva2: String(item.kva2),
+        kva3: String(item.kva3),
+        kvat: String(item.kvat),
+        kvar1: String(item.kvar1),
+        kvar2: String(item.kvar2),
+        kvar3: String(item.kvar3),
+        kvart: String(item.kvart),
+        kw1: String(item.kw1),
+        kw2: String(item.kw2),
+        kw3: String(item.kw3),
+        kwt: String(item.kwt),
+        pf1: String(item.pf1),
+        pf2: String(item.pf2),
+        pf3: String(item.pf3),
+        pft: String(item.pft),
+        hz: String(item.hz),
+        kwh_import: String(item.kwh_import),
+        kwh_export: String(item.kwh_export),
+        kvarh_import: String(item.kvarh_import),
+        kvarh_export: String(item.kvarh_export)
+      });
     }
     
+    console.log("Seeding inverter1 data...");
     for (const item of inverter1Data) {
-      await db.insert(inverter1).values(item);
+      await db.insert(inverter1).values({
+        ...item,
+        v1: String(item.v1),
+        v2: String(item.v2),
+        v3: String(item.v3),
+        v12: String(item.v12),
+        v23: String(item.v23),
+        v31: String(item.v31),
+        a1: String(item.a1),
+        a2: String(item.a2),
+        a3: String(item.a3),
+        kva1: String(item.kva1),
+        kva2: String(item.kva2),
+        kva3: String(item.kva3),
+        kvat: String(item.kvat),
+        kvar1: String(item.kvar1),
+        kvar2: String(item.kvar2),
+        kvar3: String(item.kvar3),
+        kvart: String(item.kvart),
+        kw1: String(item.kw1),
+        kw2: String(item.kw2),
+        kw3: String(item.kw3),
+        kwt: String(item.kwt),
+        pf1: String(item.pf1),
+        pf2: String(item.pf2),
+        pf3: String(item.pf3),
+        pft: String(item.pft),
+        hz: String(item.hz),
+        kwh_import: String(item.kwh_import),
+        kwh_export: String(item.kwh_export),
+        kvarh_import: String(item.kvarh_import),
+        kvarh_export: String(item.kvarh_export)
+      });
     }
     
+    console.log("Seeding inverter2 data...");
     for (const item of inverter2Data) {
-      await db.insert(inverter2).values(item);
+      await db.insert(inverter2).values({
+        ...item,
+        v1: String(item.v1),
+        v2: String(item.v2),
+        v3: String(item.v3),
+        v12: String(item.v12),
+        v23: String(item.v23),
+        v31: String(item.v31),
+        a1: String(item.a1),
+        a2: String(item.a2),
+        a3: String(item.a3),
+        kva1: String(item.kva1),
+        kva2: String(item.kva2),
+        kva3: String(item.kva3),
+        kvat: String(item.kvat),
+        kvar1: String(item.kvar1),
+        kvar2: String(item.kvar2),
+        kvar3: String(item.kvar3),
+        kvart: String(item.kvart),
+        kw1: String(item.kw1),
+        kw2: String(item.kw2),
+        kw3: String(item.kw3),
+        kwt: String(item.kwt),
+        pf1: String(item.pf1),
+        pf2: String(item.pf2),
+        pf3: String(item.pf3),
+        pft: String(item.pft),
+        hz: String(item.hz),
+        kwh_import: String(item.kwh_import),
+        kwh_export: String(item.kwh_export),
+        kvarh_import: String(item.kvarh_import),
+        kvarh_export: String(item.kvarh_export)
+      });
     }
-    
-    // Seed other data
-    await seedWeatherData();
-    await seedSystemComponents();
-    await seedGeneratorGroups();
-    await seedAlerts();
-    await seedForecastDays();
-    
-    // Seed a test user
-    await db.insert(users).values({
-      username: "admin",
-      password: "password123"
-    });
     
     console.log("Database seeding completed successfully!");
   } catch (error) {
