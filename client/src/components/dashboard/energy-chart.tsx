@@ -51,7 +51,10 @@ export default function EnergyChart() {
     queryKey: ['/api/energy/distribution'],
   });
 
-  // Use the chart data directly without transformation 
+  // Log data for debugging
+  console.log("Chart data from API:", chartData);
+  
+  // Use the chart data directly without transformation
   const transformedEnergyData = useMemo(() => {
     return chartData || [];
   }, [chartData]);

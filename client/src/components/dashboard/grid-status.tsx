@@ -124,12 +124,31 @@ export default function GridStatus() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.chartData}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                <XAxis dataKey="time" />
-                <YAxis />
-                <Tooltip />
+                <XAxis 
+                  dataKey="time" 
+                  tick={{ fontSize: 12 }}
+                  interval="preserveStartEnd"
+                  minTickGap={30}
+                />
+                <YAxis tick={{ fontSize: 12 }} width={40} />
+                <Tooltip 
+                  formatter={(value) => [`${value} kWh`, undefined]}
+                />
                 <Legend />
-                <Bar name="Import from Grid" dataKey="import" fill="#f59e0b" />
-                <Bar name="Export to Grid" dataKey="export" fill="#10b981" />
+                <Bar 
+                  name="Import from Grid" 
+                  dataKey="import" 
+                  fill="#f59e0b" 
+                  barSize={20}
+                  isAnimationActive={false}
+                />
+                <Bar 
+                  name="Export to Grid" 
+                  dataKey="export" 
+                  fill="#10b981" 
+                  barSize={20}
+                  isAnimationActive={false}
+                />
               </BarChart>
             </ResponsiveContainer>
           )}

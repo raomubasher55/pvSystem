@@ -248,26 +248,34 @@ export default function EnergyHistory() {
                       <Tooltip content={<CustomTooltip />} />
                       <Legend wrapperStyle={{ paddingTop: 10 }} />
                       <Line 
-                        type="monotone" 
+                        type="linear" 
                         dataKey="production" 
                         name="Production" 
                         stroke="#3b82f6" 
                         strokeWidth={2}
-                        activeDot={{ r: 8 }} 
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 6 }}
+                        isAnimationActive={false}
                       />
                       <Line 
-                        type="monotone" 
+                        type="linear" 
                         dataKey="consumption" 
                         name="Consumption" 
                         stroke="#10b981"
                         strokeWidth={2}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 6 }}
+                        isAnimationActive={false}
                       />
                       <Line 
-                        type="monotone" 
+                        type="linear" 
                         dataKey="gridExport" 
                         name="Grid Export" 
                         stroke="#f59e0b"
                         strokeWidth={2}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 6 }}
+                        isAnimationActive={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
