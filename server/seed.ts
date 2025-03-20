@@ -160,13 +160,43 @@ async function seedDatabase() {
   try {
     console.log("Starting database seeding...");
     
-    // Seed power source data (past 24 hours)
-    const grid1Data = generatePowerTimeSeriesData(24, 180, 20);
-    const grid2Data = generatePowerTimeSeriesData(24, 120, 15);
-    const generator1Data = generatePowerTimeSeriesData(24, 80, 10);
-    const generator2Data = generatePowerTimeSeriesData(24, 50, 8);
-    const inverter1Data = generatePowerTimeSeriesData(24, 40, 5);
-    const inverter2Data = generatePowerTimeSeriesData(24, 25, 3);
+    // Seed power source data (past 7 days with hourly data)
+    // Update the generatePowerTimeSeriesData function to accept a timeOffset parameter
+    const generateMoreData = (count: number, baseValue: number, variance: number, timeOffset: number = 0) => {
+      return generatePowerTimeSeriesData(count, baseValue, variance).map(item => {
+        if (timeOffset > 0) {
+          const newTime = new Date(item.time);
+          newTime.setHours(newTime.getHours() - timeOffset);
+          return { ...item, time: newTime };
+        }
+        return item;
+      });
+    };
+
+    const grid1Data = [
+      ...generatePowerTimeSeriesData(24, 180, 20), // Last 24 hours
+      ...generateMoreData(6 * 24, 180, 30, 24) // Previous 6 days
+    ];
+    const grid2Data = [
+      ...generatePowerTimeSeriesData(24, 120, 15), // Last 24 hours
+      ...generateMoreData(6 * 24, 120, 25, 24) // Previous 6 days
+    ];
+    const generator1Data = [
+      ...generatePowerTimeSeriesData(24, 80, 10), // Last 24 hours
+      ...generateMoreData(6 * 24, 80, 15, 24) // Previous 6 days
+    ];
+    const generator2Data = [
+      ...generatePowerTimeSeriesData(24, 50, 8), // Last 24 hours
+      ...generateMoreData(6 * 24, 50, 12, 24) // Previous 6 days
+    ];
+    const inverter1Data = [
+      ...generatePowerTimeSeriesData(24, 40, 5), // Last 24 hours
+      ...generateMoreData(6 * 24, 40, 8, 24) // Previous 6 days
+    ];
+    const inverter2Data = [
+      ...generatePowerTimeSeriesData(24, 25, 3), // Last 24 hours
+      ...generateMoreData(6 * 24, 25, 5, 24) // Previous 6 days
+    ];
     
     // Bulk insert for each source
     for (const item of grid1Data) {
