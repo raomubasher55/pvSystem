@@ -60,7 +60,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // New endpoint for energy chart data with hourly time points
   app.get("/api/energy/chart", async (req, res) => {
     try {
-      const chartData = await storage.getEnergyChartData();
+      const timeRange = req.query.timeRange as string || 'last-24h';
+      const chartData = await storage.getEnergyChartData(timeRange);
       res.json(chartData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch energy chart data" });

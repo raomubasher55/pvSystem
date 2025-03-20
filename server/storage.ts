@@ -389,13 +389,13 @@ export const storage = {
           break;
       }
       
-      // Get grid and generator data from the last 24 hours
+      // Get grid and generator data for the specified time range
       const grid1Data = await db.select().from(schema.grid1)
-        .where(gte(schema.grid1.time, twentyFourHoursAgo))
+        .where(gte(schema.grid1.time, startDate))
         .orderBy(schema.grid1.time);
       
       const generator1Data = await db.select().from(schema.generator1)
-        .where(gte(schema.generator1.time, twentyFourHoursAgo))
+        .where(gte(schema.generator1.time, startDate))
         .orderBy(schema.generator1.time);
       
       // Group by hour for more readable charts

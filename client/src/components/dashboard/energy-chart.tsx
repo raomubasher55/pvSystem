@@ -16,7 +16,14 @@ import {
 } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 // Define types based on actual API response
 type ApiEnergyData = {
@@ -41,9 +48,16 @@ type EnergyDistribution = {
 // Remove mock data as we are using real data from API
 
 export default function EnergyChart() {
-  // Use the new energy chart data API endpoint
+  const [timeRange, setTimeRange] = useState('last-24h');
+  
+  // Use the new energy chart data API endpoint with time range
   const { data: chartData, isLoading: isLoadingEnergy } = useQuery<ChartEnergyData[]>({
-    queryKey: ['/api/energy/chart'],
+    queryKey: ['/api/energy/chart', timeRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/energy/chart?timeRange=${timeRange}`);
+      if (!res.ok) throw new Error('Failed to fetch energy chart data');
+      return res.json();
+    }
   });
 
   // Distribution data for the pie chart
@@ -81,6 +95,21 @@ export default function EnergyChart() {
           </div>
           
           <div className="flex items-center gap-3">
+            <div className="flex items-center mr-4">
+              <Select 
+                value={timeRange} 
+                onValueChange={(value) => setTimeRange(value)}
+              >
+                <SelectTrigger className="w-[150px] h-8 text-sm">
+                  <SelectValue placeholder="Select timeframe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="last-24h">Last 24 hours</SelectItem>
+                  <SelectItem value="last-7d">Last 7 days</SelectItem>
+                  <SelectItem value="last-30d">Last 30 days</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-blue-500"></span>
               <span className="text-sm text-gray-500 dark:text-gray-400">Production</span>
