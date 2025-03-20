@@ -240,10 +240,13 @@ export default function EnergyHistory() {
                       <XAxis 
                         dataKey="date" 
                         tick={{ fontSize: 12 }}
+                        interval="preserveEnd"
+                        minTickGap={20}
                       />
                       <YAxis 
                         tick={{ fontSize: 12 }}
                         tickFormatter={formatEnergy}
+                        width={60}
                       />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend wrapperStyle={{ paddingTop: 10 }} />
@@ -300,10 +303,13 @@ export default function EnergyHistory() {
                       <XAxis 
                         dataKey="month" 
                         tick={{ fontSize: 12 }}
+                        interval="preserveStartEnd"
+                        minTickGap={30}
                       />
                       <YAxis 
                         tick={{ fontSize: 12 }}
                         tickFormatter={formatEnergy}
+                        width={60}
                       />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend wrapperStyle={{ paddingTop: 10 }} />
@@ -312,18 +318,24 @@ export default function EnergyHistory() {
                         name="Production" 
                         fill="#3b82f6" 
                         radius={[4, 4, 0, 0]}
+                        barSize={25}
+                        isAnimationActive={false}
                       />
                       <Bar 
                         dataKey="consumption" 
                         name="Consumption" 
                         fill="#10b981"
                         radius={[4, 4, 0, 0]}
+                        barSize={25}
+                        isAnimationActive={false}
                       />
                       <Bar 
                         dataKey="gridExport" 
                         name="Grid Export" 
                         fill="#f59e0b"
                         radius={[4, 4, 0, 0]}
+                        barSize={25}
+                        isAnimationActive={false}
                       />
                     </BarChart>
                   </ResponsiveContainer>
@@ -348,10 +360,12 @@ export default function EnergyHistory() {
                       <XAxis 
                         dataKey="year" 
                         tick={{ fontSize: 12 }}
+                        interval={0}
                       />
                       <YAxis 
                         tick={{ fontSize: 12 }}
                         tickFormatter={formatEnergy}
+                        width={60}
                       />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend wrapperStyle={{ paddingTop: 10 }} />
@@ -360,18 +374,24 @@ export default function EnergyHistory() {
                         name="Production" 
                         fill="#3b82f6" 
                         radius={[4, 4, 0, 0]}
+                        barSize={35}
+                        isAnimationActive={false}
                       />
                       <Bar 
                         dataKey="consumption" 
                         name="Consumption" 
                         fill="#10b981"
                         radius={[4, 4, 0, 0]}
+                        barSize={35}
+                        isAnimationActive={false}
                       />
                       <Bar 
                         dataKey="gridExport" 
                         name="Grid Export" 
                         fill="#f59e0b"
                         radius={[4, 4, 0, 0]}
+                        barSize={35}
+                        isAnimationActive={false}
                       />
                     </BarChart>
                   </ResponsiveContainer>
