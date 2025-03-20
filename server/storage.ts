@@ -133,10 +133,62 @@ export class DatabaseStorage implements IStorage {
     return kpis;
   }
   async getEnergyData(): Promise<any[]> {
-    const result = await db.select().from(grid1)
-      .where(sql`time >= NOW() - INTERVAL '24 HOUR'`)
-      .orderBy(grid1.time);
-    return result;
+    // Fetch data from all power sources and combine it
+    const timeframe = sql`time >= NOW() - INTERVAL '24 HOUR'`;
+    
+    // Get data from all sources
+    const grid1Data = await db.select().from(grid1).where(timeframe).orderBy(grid1.time);
+    const grid2Data = await db.select().from(grid2).where(timeframe).orderBy(grid2.time);
+    const generator1Data = await db.select().from(generator1).where(timeframe).orderBy(generator1.time);
+    const generator2Data = await db.select().from(generator2).where(timeframe).orderBy(generator2.time);
+    const inverter1Data = await db.select().from(inverter1).where(timeframe).orderBy(inverter1.time);
+    const inverter2Data = await db.select().from(inverter2).where(timeframe).orderBy(inverter2.time);
+    
+    // Group data by hour to reduce data points
+    const hourlyData = new Map<string, any>();
+    
+    // Process all power sources
+    const processDataSource = (data: any[], sourceName: string) => {
+      data.forEach(record => {
+        const date = new Date(record.time);
+        // Create hour key (YYYY-MM-DD HH:00)
+        const hourKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:00`;
+        
+        if (!hourlyData.has(hourKey)) {
+          hourlyData.set(hourKey, {
+            time: hourKey,
+            total_power: Number(record.kwt || 0),
+            kwh_import: Number(record.kwh_import || 0),
+            kwh_export: Number(record.kwh_export || 0),
+            sources: { [sourceName]: Number(record.kwt || 0) }
+          });
+        } else {
+          const existing = hourlyData.get(hourKey);
+          hourlyData.set(hourKey, {
+            ...existing,
+            total_power: existing.total_power + Number(record.kwt || 0),
+            kwh_import: existing.kwh_import + Number(record.kwh_import || 0),
+            kwh_export: existing.kwh_export + Number(record.kwh_export || 0),
+            sources: {
+              ...existing.sources,
+              [sourceName]: (existing.sources[sourceName] || 0) + Number(record.kwt || 0)
+            }
+          });
+        }
+      });
+    };
+    
+    // Process all data sources
+    processDataSource(grid1Data, 'grid1');
+    processDataSource(grid2Data, 'grid2');
+    processDataSource(generator1Data, 'generator1');
+    processDataSource(generator2Data, 'generator2');
+    processDataSource(inverter1Data, 'inverter1');
+    processDataSource(inverter2Data, 'inverter2');
+    
+    // Convert map to array and sort by time
+    return Array.from(hourlyData.values())
+      .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }
   async getEnergyDistribution(): Promise<any[]> {
     // Get the latest data from each power source
@@ -161,7 +213,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEnergyHistoryDaily(): Promise<any[]> {
-    // Generate sample daily energy history (last 7 days)
+    // Generate daily energy history (last 7 days) using data from all power sources
     const result = [];
     const now = new Date();
     
@@ -176,33 +228,46 @@ export class DatabaseStorage implements IStorage {
       const dayEnd = new Date(date);
       dayEnd.setHours(23, 59, 59, 999);
       
-      // Get data from each source for this day
-      const gridData = await db.select().from(grid1)
-        .where(sql`time >= ${dayStart} AND time <= ${dayEnd}`)
-        .orderBy(grid1.time);
-        
-      const generatorData = await db.select().from(generator1)
-        .where(sql`time >= ${dayStart} AND time <= ${dayEnd}`)
-        .orderBy(generator1.time);
-        
-      const inverterData = await db.select().from(inverter1)
-        .where(sql`time >= ${dayStart} AND time <= ${dayEnd}`)
-        .orderBy(inverter1.time);
+      // Query to get aggregated data for this day from all sources
+      const queryParams = sql`time >= ${dayStart} AND time <= ${dayEnd}`;
       
-      // Calculate totals
-      const production = Math.max(0, generatorData.reduce((sum, record) => sum + Number(record.kwt || 0), 0) + 
-                         inverterData.reduce((sum, record) => sum + Number(record.kwt || 0), 0));
-                         
-      const consumption = gridData.reduce((sum, record) => sum + Number(record.kwh_import || 0), 0) + 
-                         production;
-                         
-      const gridExport = gridData.reduce((sum, record) => sum + Number(record.kwh_export || 0), 0);
+      // Get data from all sources for this day
+      const grid1Data = await db.select().from(grid1).where(queryParams);
+      const grid2Data = await db.select().from(grid2).where(queryParams);
+      const generator1Data = await db.select().from(generator1).where(queryParams);
+      const generator2Data = await db.select().from(generator2).where(queryParams);
+      const inverter1Data = await db.select().from(inverter1).where(queryParams);
+      const inverter2Data = await db.select().from(inverter2).where(queryParams);
+      
+      // Calculate totals from all sources
+      const calculateTotal = (data: any[], field: string) => {
+        return data.reduce((sum, record) => sum + Number(record[field] || 0), 0);
+      };
+      
+      // Generator and inverter power is considered production
+      const production = 
+        calculateTotal(generator1Data, 'kwt') +
+        calculateTotal(generator2Data, 'kwt') +
+        calculateTotal(inverter1Data, 'kwt') +
+        calculateTotal(inverter2Data, 'kwt');
+      
+      // Grid import plus production is total consumption
+      const gridImport = 
+        calculateTotal(grid1Data, 'kwh_import') +
+        calculateTotal(grid2Data, 'kwh_import');
+      
+      const consumption = gridImport + production;
+      
+      // Grid export is energy sent back to the grid
+      const gridExport = 
+        calculateTotal(grid1Data, 'kwh_export') +
+        calculateTotal(grid2Data, 'kwh_export');
       
       result.push({
         date: dateString,
-        production: production || Math.random() * 100 + 50, // Fallback value if no data
-        consumption: consumption || Math.random() * 150 + 70, // Fallback value if no data
-        gridExport: gridExport || Math.random() * 30 // Fallback value if no data
+        production: production,
+        consumption: consumption,
+        gridExport: gridExport
       });
     }
     
@@ -266,13 +331,17 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getGeneratorPerformanceHourly(): Promise<any[]> {
-    // Get generator data for the past 24 hours
+    // Get generator data for the past 24 hours from both generators
     const past24Hours = new Date();
     past24Hours.setHours(past24Hours.getHours() - 24);
     
-    const gen1Data = await db.select().from(generator1)
+    const generator1Data = await db.select().from(generator1)
       .where(sql`time >= ${past24Hours}`)
       .orderBy(generator1.time);
+      
+    const generator2Data = await db.select().from(generator2)
+      .where(sql`time >= ${past24Hours}`)
+      .orderBy(generator2.time);
       
     // Process the data to hourly intervals
     const hourlyData = [];
@@ -289,13 +358,21 @@ export class DatabaseStorage implements IStorage {
       hourEnd.setMinutes(59, 59, 999);
       
       // Filter generator data for this hour
-      const hourlyRecords = gen1Data.filter(
+      const hourlyRecordsGen1 = generator1Data.filter(
         record => record.time >= hourStart && record.time <= hourEnd
       );
       
-      // Calculate average power for this hour
-      const avgPower = hourlyRecords.length > 0
-        ? hourlyRecords.reduce((sum, record) => sum + Number(record.kwt || 0), 0) / hourlyRecords.length
+      const hourlyRecordsGen2 = generator2Data.filter(
+        record => record.time >= hourStart && record.time <= hourEnd
+      );
+      
+      // Calculate average power for this hour from both generators
+      const avgPowerGen1 = hourlyRecordsGen1.length > 0
+        ? hourlyRecordsGen1.reduce((sum, record) => sum + Number(record.kwt || 0), 0) / hourlyRecordsGen1.length
+        : 0;
+        
+      const avgPowerGen2 = hourlyRecordsGen2.length > 0
+        ? hourlyRecordsGen2.reduce((sum, record) => sum + Number(record.kwt || 0), 0) / hourlyRecordsGen2.length
         : 0;
       
       // Format the time label (e.g., "14:00")
@@ -307,7 +384,9 @@ export class DatabaseStorage implements IStorage {
       
       hourlyData.push({
         time: timeLabel,
-        output: avgPower
+        gen1: avgPowerGen1,
+        gen2: avgPowerGen2,
+        output: avgPowerGen1 + avgPowerGen2
       });
     }
     
@@ -340,41 +419,82 @@ export class DatabaseStorage implements IStorage {
     ];
   }
   async getGridStatus(): Promise<any> {
-    const [latestGrid] = await db.select().from(grid1)
+    // Get latest data from both grid sources
+    const [latestGrid1] = await db.select().from(grid1)
       .orderBy(desc(grid1.time))
       .limit(1);
+      
+    const [latestGrid2] = await db.select().from(grid2)
+      .orderBy(desc(grid2.time))
+      .limit(1);
 
-    if (!latestGrid) {
+    if (!latestGrid1 && !latestGrid2) {
       throw new Error("No grid data available");
+    }
+
+    // Use the most recent grid data
+    const latestGrid = latestGrid1 && latestGrid2 
+      ? (latestGrid1.time > latestGrid2.time ? latestGrid1 : latestGrid2)
+      : (latestGrid1 || latestGrid2);
+      
+    // Calculate total import and export values from both grid sources
+    let totalImport = 0;
+    let totalExport = 0;
+    
+    if (latestGrid1) {
+      totalImport += Number(latestGrid1.kwh_import || 0);
+      totalExport += Number(latestGrid1.kwh_export || 0);
+    }
+    
+    if (latestGrid2) {
+      totalImport += Number(latestGrid2.kwh_import || 0);
+      totalExport += Number(latestGrid2.kwh_export || 0);
     }
 
     return {
       id: 1,
       timestamp: latestGrid.time,
-      import: String(Number(latestGrid.kwh_import).toFixed(1)),
-      importChange: String(0), 
-      export: String(Number(latestGrid.kwh_export).toFixed(1)),
-      exportChange: String(0), 
-      netBalance: String((Number(latestGrid.kwh_export) - Number(latestGrid.kwh_import)).toFixed(1)),
+      import: totalImport.toFixed(1),
+      importChange: "0", 
+      export: totalExport.toFixed(1),
+      exportChange: "0", 
+      netBalance: (totalExport - totalImport).toFixed(1),
       voltage: String(Number(latestGrid.v1).toFixed(1)),
       frequency: String(Number(latestGrid.hz).toFixed(2)),
       chartData: [], 
     };
   }
   async getGridVoltage(): Promise<any[]> {
-    // Get voltage data for the past 24 hours
+    // Get voltage data from both grid sources for the past 24 hours
     const past24Hours = new Date();
     past24Hours.setHours(past24Hours.getHours() - 24);
     
-    const voltageData = await db.select({
+    // Get voltage data from both grid sources
+    const grid1VoltageData = await db.select({
       v1: grid1.v1,
       v2: grid1.v2,
       v3: grid1.v3,
-      time: grid1.time
+      time: grid1.time,
+      source: sql`'grid1'::text` // Add source identifier
     })
     .from(grid1)
     .where(sql`time >= ${past24Hours}`)
     .orderBy(grid1.time);
+    
+    const grid2VoltageData = await db.select({
+      v1: grid2.v1,
+      v2: grid2.v2,
+      v3: grid2.v3,
+      time: grid2.time,
+      source: sql`'grid2'::text` // Add source identifier
+    })
+    .from(grid2)
+    .where(sql`time >= ${past24Hours}`)
+    .orderBy(grid2.time);
+    
+    // Combine both datasets
+    const voltageData = [...grid1VoltageData, ...grid2VoltageData]
+      .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
     
     // Transform data for chart display (hourly intervals)
     const hourlyData = [];
@@ -421,17 +541,32 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getGridFrequency(): Promise<any[]> {
-    // Get frequency data for the past 24 hours
+    // Get frequency data from both grid sources for the past 24 hours
     const past24Hours = new Date();
     past24Hours.setHours(past24Hours.getHours() - 24);
     
-    const frequencyData = await db.select({
+    // Get frequency data from both grid sources
+    const grid1FrequencyData = await db.select({
       hz: grid1.hz,
-      time: grid1.time
+      time: grid1.time,
+      source: sql`'grid1'::text` // Add source identifier
     })
     .from(grid1)
     .where(sql`time >= ${past24Hours}`)
     .orderBy(grid1.time);
+    
+    const grid2FrequencyData = await db.select({
+      hz: grid2.hz,
+      time: grid2.time,
+      source: sql`'grid2'::text` // Add source identifier
+    })
+    .from(grid2)
+    .where(sql`time >= ${past24Hours}`)
+    .orderBy(grid2.time);
+    
+    // Combine both datasets
+    const frequencyData = [...grid1FrequencyData, ...grid2FrequencyData]
+      .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
     
     // Transform data for chart display (hourly intervals)
     const hourlyData = [];
