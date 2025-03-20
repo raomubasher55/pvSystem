@@ -1,6 +1,7 @@
-import { db, pool } from "./db";
+import { db } from "./db";
 import { 
-  grid1, grid2, generator1, generator2, inverter1, inverter2
+  grid1, grid2, generator1, generator2, inverter1, inverter2,
+  alerts, forecastDays
 } from "@shared/schema";
 
 // Helper to create sample time-series data
@@ -325,12 +326,107 @@ async function seedDatabase() {
       });
     }
     
+    // Seed alerts data
+    console.log("Seeding alerts data...");
+    const alertsData = [
+      {
+        status: "warning",
+        description: "Generator 1 output below expected level",
+        component: "Generator 1",
+        time: "10:25 AM",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) // 2 hours ago
+      },
+      {
+        status: "critical",
+        description: "Grid connection interrupted",
+        component: "Grid 1",
+        time: "9:12 AM",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3) // 3 hours ago
+      },
+      {
+        status: "info",
+        description: "Scheduled maintenance completed",
+        component: "System",
+        time: "Yesterday",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24) // 1 day ago
+      },
+      {
+        status: "warning",
+        description: "Battery storage at 15% capacity",
+        component: "Battery Bank",
+        time: "Yesterday",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 28) // 1 day 4 hours ago
+      },
+      {
+        status: "critical",
+        description: "Inverter 2 temperature exceeding threshold",
+        component: "Inverter 2",
+        time: "Mar 18",
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 50) // 2 days 2 hours ago
+      }
+    ];
+    
+    for (const alert of alertsData) {
+      await db.insert(alerts).values(alert);
+    }
+    
+    // Seed forecast days data
+    console.log("Seeding forecast days data...");
+    const forecastDaysData = [
+      {
+        date: "Today",
+        weather: "Sunny",
+        forecast: "72.4 kWh",
+        comparison: 5.2
+      },
+      {
+        date: "Tomorrow",
+        weather: "Partly Cloudy",
+        forecast: "64.8 kWh",
+        comparison: -3.1
+      },
+      {
+        date: "Wednesday",
+        weather: "Cloudy",
+        forecast: "52.1 kWh",
+        comparison: -12.6
+      },
+      {
+        date: "Thursday",
+        weather: "Sunny",
+        forecast: "70.2 kWh",
+        comparison: 2.3
+      },
+      {
+        date: "Friday",
+        weather: "Sunny",
+        forecast: "71.8 kWh",
+        comparison: 4.2
+      },
+      {
+        date: "Saturday",
+        weather: "Rainy",
+        forecast: "45.3 kWh",
+        comparison: -18.7
+      },
+      {
+        date: "Sunday",
+        weather: "Partly Cloudy",
+        forecast: "62.5 kWh",
+        comparison: -5.8
+      }
+    ];
+    
+    for (const forecast of forecastDaysData) {
+      await db.insert(forecastDays).values(forecast);
+    }
+    
     console.log("Database seeding completed successfully!");
   } catch (error) {
     console.error("Error seeding database:", error);
   } finally {
-    // Close the database connection
-    await pool.end();
+    // No need to close connection with postgres-js
+    console.log("Seed process completed");
   }
 }
 

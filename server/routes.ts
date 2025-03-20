@@ -127,7 +127,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/grid/frequency", async (req, res) => {
     try {
-      const frequencyData = await storage.getGridFrequency();
+      // For now, returning a static frequency dataset since we don't have a dedicated method
+      const frequencyData = [
+        { time: "12 AM", value: 50.1 },
+        { time: "3 AM", value: 50.2 },
+        { time: "6 AM", value: 50.0 },
+        { time: "9 AM", value: 49.9 },
+        { time: "12 PM", value: 50.0 },
+        { time: "3 PM", value: 50.1 },
+        { time: "6 PM", value: 50.2 },
+        { time: "9 PM", value: 50.0 }
+      ];
       res.json(frequencyData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch grid frequency data" });
@@ -186,7 +196,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Weather forecast endpoint
   app.get("/api/weather/forecast", async (req, res) => {
     try {
-      const forecast = await storage.getWeatherForecast();
+      // Return static weather forecast data for now
+      const forecast = [
+        { day: "Today", condition: "Sunny", high: 28, low: 16 },
+        { day: "Tomorrow", condition: "Partly Cloudy", high: 26, low: 15 },
+        { day: "Wednesday", condition: "Cloudy", high: 24, low: 14 },
+        { day: "Thursday", condition: "Sunny", high: 29, low: 17 },
+        { day: "Friday", condition: "Sunny", high: 30, low: 18 }
+      ];
       res.json(forecast);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch weather forecast" });
@@ -195,7 +212,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/weather/solar", async (req, res) => {
     try {
-      const solarData = await storage.getSolarRadiation();
+      // Return static solar radiation data for now
+      const solarData = [
+        { time: "6 AM", value: 100 },
+        { time: "7 AM", value: 250 },
+        { time: "8 AM", value: 400 },
+        { time: "9 AM", value: 550 },
+        { time: "10 AM", value: 700 },
+        { time: "11 AM", value: 820 },
+        { time: "12 PM", value: 900 },
+        { time: "1 PM", value: 950 },
+        { time: "2 PM", value: 880 },
+        { time: "3 PM", value: 750 },
+        { time: "4 PM", value: 600 },
+        { time: "5 PM", value: 450 },
+        { time: "6 PM", value: 280 },
+        { time: "7 PM", value: 100 },
+        { time: "8 PM", value: 0 }
+      ];
       res.json(solarData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch solar radiation data" });
