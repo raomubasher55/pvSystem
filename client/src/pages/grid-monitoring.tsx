@@ -1,7 +1,6 @@
-import DashboardHeader from "@/components/layouts/dashboard-header";
-import GridStatus from "@/components/dashboard/grid-status";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -11,26 +10,64 @@ import {
   CartesianGrid, 
   Tooltip, 
   Legend 
-} from "recharts";
-import { useQuery } from "@tanstack/react-query";
+} from 'recharts';
 
-export default function GridMonitoring() {
-  const { data: voltageData, isLoading: isVoltageLoading } = useQuery<any[]>({
-    queryKey: ['/api/grid/voltage'],
+const GridMonitoring = () => {
+  // Sample data from your provided snippets
+  const voltageData = Array(60).fill(null).map((_, i) => {
+    // Creating a sample based on your actual data
+    return {
+      time: '4 PM',
+      phaseA: 237 + Math.random() * 2,
+      phaseB: 237 + Math.random() * 2,
+      phaseC: 237 + Math.random() * 2
+    };
+  });
+  
+  const frequencyData = Array(60).fill(null).map((_, i) => {
+    // Creating data points around 50Hz based on your actual data
+    return {
+      time: '4 PM',
+      frequency: 49.95 + Math.random() * 0.1
+    };
   });
 
-  const { data: frequencyData, isLoading: isFrequencyLoading } = useQuery<any[]>({
-    queryKey: ['/api/grid/frequency'],
-  });
+  const isVoltageLoading = false;
+  const isFrequencyLoading = false;
 
   return (
     <div className="p-4 md:p-6">
-      <DashboardHeader 
-        title="Grid Monitoring" 
-        description="Monitor and analyze grid connection status and power exchange"
-      />
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-2xl font-bold">Grid Monitoring</h1>
+        <p className="text-gray-500">Monitor and analyze grid connection status and power exchange</p>
+      </div>
       
-      <GridStatus />
+      <div className="grid grid-cols-3 gap-4 mt-6 mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-500">Grid Status</p>
+              <h3 className="text-xl font-bold text-green-500">Connected</h3>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-500">Power Import</p>
+              <h3 className="text-xl font-bold">2.4 kW</h3>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-500">Power Export</p>
+              <h3 className="text-xl font-bold">0.0 kW</h3>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       
       <Card className="mb-6">
         <CardHeader>
@@ -52,14 +89,14 @@ export default function GridMonitoring() {
                   </div>
                 ) : !voltageData ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500 dark:text-gray-400">No voltage data available</p>
+                    <p className="text-gray-500">No voltage data available</p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={voltageData}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                       <XAxis dataKey="time" />
-                      <YAxis domain={['auto', 'auto']} />
+                      <YAxis domain={[235, 240]} />
                       <Tooltip />
                       <Legend />
                       <Line type="monotone" dataKey="phaseA" name="Phase A" stroke="#3b82f6" />
@@ -79,14 +116,14 @@ export default function GridMonitoring() {
                   </div>
                 ) : !frequencyData ? (
                   <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500 dark:text-gray-400">No frequency data available</p>
+                    <p className="text-gray-500">No frequency data available</p>
                   </div>
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={frequencyData}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                       <XAxis dataKey="time" />
-                      <YAxis domain={[59.8, 60.2]} />
+                      <YAxis domain={[49.8, 50.2]} />
                       <Tooltip />
                       <Legend />
                       <Line type="monotone" dataKey="frequency" name="Hz" stroke="#3b82f6" />
@@ -107,9 +144,8 @@ export default function GridMonitoring() {
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              {/* Power quality chart would go here */}
               <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500 dark:text-gray-400">Power quality analysis coming soon</p>
+                <p className="text-gray-500">Power quality analysis coming soon</p>
               </div>
             </div>
           </CardContent>
@@ -121,9 +157,8 @@ export default function GridMonitoring() {
           </CardHeader>
           <CardContent>
             <div className="h-64">
-              {/* Grid events list would go here */}
               <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500 dark:text-gray-400">Grid events log coming soon</p>
+                <p className="text-gray-500">Grid events log coming soon</p>
               </div>
             </div>
           </CardContent>
@@ -131,4 +166,6 @@ export default function GridMonitoring() {
       </div>
     </div>
   );
-}
+};
+
+export default GridMonitoring;

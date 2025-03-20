@@ -58,9 +58,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "pf"
         }
       ];
+      // console.log(kpis)
       res.json(kpis);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch KPI data" });
+      // console.log(error)
+      res.status(500).json({ error: error });
     }
   });
 
