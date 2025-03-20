@@ -194,7 +194,7 @@ export const storage = {
         .orderBy(schema.generator1.time);
       
       // Group by hour and calculate average power
-      const hourlyData = {};
+      const hourlyData: Record<string, { sum: number, count: number }> = {};
       
       generator1Data.forEach(record => {
         const hour = new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric' });
@@ -207,7 +207,7 @@ export const storage = {
         hourlyData[hour].count += 1;
       });
       
-      return Object.entries(hourlyData).map(([hour, data]: [string, any]) => ({
+      return Object.entries(hourlyData).map(([hour, data]) => ({
         time: hour,
         value: (data.sum / data.count)
       }));
@@ -250,7 +250,7 @@ export const storage = {
         .orderBy(schema.grid1.time);
       
       // Group by hour to reduce data points
-      const hourlyData = {};
+      const hourlyData: Record<string, { v1Sum: number, v2Sum: number, v3Sum: number, count: number }> = {};
       
       grid1Data.forEach(record => {
         const hour = new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric' });
@@ -265,7 +265,7 @@ export const storage = {
         hourlyData[hour].count += 1;
       });
       
-      return Object.entries(hourlyData).map(([hour, data]: [string, any]) => ({
+      return Object.entries(hourlyData).map(([hour, data]) => ({
         time: hour,
         v1: data.v1Sum / data.count,
         v2: data.v2Sum / data.count,
@@ -353,7 +353,7 @@ export const storage = {
         .orderBy(schema.grid1.time);
       
       // Group data by day
-      const dailyData = {};
+      const dailyData: Record<string, { production: number, consumption: number, gridExport: number }> = {};
       
       generator1Data.forEach(record => {
         const date = new Date(record.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -377,7 +377,7 @@ export const storage = {
       });
       
       // Convert to array and sort by date
-      return Object.entries(dailyData).map(([date, data]: [string, any]) => ({
+      return Object.entries(dailyData).map(([date, data]) => ({
         date,
         production: data.production,
         consumption: data.consumption,
@@ -404,7 +404,7 @@ export const storage = {
         .orderBy(schema.grid1.time);
       
       // Group data by month
-      const monthlyData = {};
+      const monthlyData: Record<string, { production: number, consumption: number, gridExport: number }> = {};
       
       generator1Data.forEach(record => {
         const month = new Date(record.time).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -428,7 +428,7 @@ export const storage = {
       });
       
       // Convert to array and sort by month
-      return Object.entries(monthlyData).map(([month, data]: [string, any]) => ({
+      return Object.entries(monthlyData).map(([month, data]) => ({
         month,
         production: data.production,
         consumption: data.consumption,
@@ -455,7 +455,7 @@ export const storage = {
         .orderBy(schema.grid1.time);
       
       // Group data by year
-      const yearlyData = {};
+      const yearlyData: Record<string, { production: number, consumption: number, gridExport: number }> = {};
       
       generator1Data.forEach(record => {
         const year = new Date(record.time).getFullYear().toString();
@@ -479,7 +479,7 @@ export const storage = {
       });
       
       // Convert to array and sort by year
-      return Object.entries(yearlyData).map(([year, data]: [string, any]) => ({
+      return Object.entries(yearlyData).map(([year, data]) => ({
         year,
         production: data.production,
         consumption: data.consumption,

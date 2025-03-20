@@ -78,30 +78,13 @@ async function seedDatabase() {
       });
     };
 
-    const grid1Data = [
-      ...generatePowerTimeSeriesData(24, 180, 20), // Last 24 hours
-      ...generateMoreData(6 * 24, 180, 30, 24) // Previous 6 days
-    ];
-    const grid2Data = [
-      ...generatePowerTimeSeriesData(24, 120, 15), // Last 24 hours
-      ...generateMoreData(6 * 24, 120, 25, 24) // Previous 6 days
-    ];
-    const generator1Data = [
-      ...generatePowerTimeSeriesData(24, 80, 10), // Last 24 hours
-      ...generateMoreData(6 * 24, 80, 15, 24) // Previous 6 days
-    ];
-    const generator2Data = [
-      ...generatePowerTimeSeriesData(24, 50, 8), // Last 24 hours
-      ...generateMoreData(6 * 24, 50, 12, 24) // Previous 6 days
-    ];
-    const inverter1Data = [
-      ...generatePowerTimeSeriesData(24, 40, 5), // Last 24 hours
-      ...generateMoreData(6 * 24, 40, 8, 24) // Previous 6 days
-    ];
-    const inverter2Data = [
-      ...generatePowerTimeSeriesData(24, 25, 3), // Last 24 hours
-      ...generateMoreData(6 * 24, 25, 5, 24) // Previous 6 days
-    ];
+    // Minimal data for testing - just 3 time points per source
+    const grid1Data = generatePowerTimeSeriesData(3, 180, 20);
+    const grid2Data = generatePowerTimeSeriesData(3, 120, 15);
+    const generator1Data = generatePowerTimeSeriesData(3, 80, 10);
+    const generator2Data = generatePowerTimeSeriesData(3, 50, 8);
+    const inverter1Data = generatePowerTimeSeriesData(3, 40, 5);
+    const inverter2Data = generatePowerTimeSeriesData(3, 25, 3);
     
     // Bulk insert for each source
     console.log("Seeding grid1 data...");
@@ -377,43 +360,43 @@ async function seedDatabase() {
         date: "Today",
         weather: "Sunny",
         forecast: "72.4 kWh",
-        comparison: 5.2
+        comparison: "5.2"
       },
       {
         date: "Tomorrow",
         weather: "Partly Cloudy",
         forecast: "64.8 kWh",
-        comparison: -3.1
+        comparison: "-3.1"
       },
       {
         date: "Wednesday",
         weather: "Cloudy",
         forecast: "52.1 kWh",
-        comparison: -12.6
+        comparison: "-12.6"
       },
       {
         date: "Thursday",
         weather: "Sunny",
         forecast: "70.2 kWh",
-        comparison: 2.3
+        comparison: "2.3"
       },
       {
         date: "Friday",
         weather: "Sunny",
         forecast: "71.8 kWh",
-        comparison: 4.2
+        comparison: "4.2"
       },
       {
         date: "Saturday",
         weather: "Rainy",
         forecast: "45.3 kWh",
-        comparison: -18.7
+        comparison: "-18.7"
       },
       {
         date: "Sunday",
         weather: "Partly Cloudy",
         forecast: "62.5 kWh",
-        comparison: -5.8
+        comparison: "-5.8"
       }
     ];
     
