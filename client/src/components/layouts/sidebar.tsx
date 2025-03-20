@@ -6,11 +6,26 @@ import {
   PanelTop, 
   CloudSun, 
   Settings, 
-  Bell 
+  Bell,
+  Battery,
+  Zap,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react";
+import { useState } from "react";
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    powerSources: false
+  });
+  
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
   
   const isActive = (path: string) => location === path;
   
@@ -92,6 +107,68 @@ export default function Sidebar() {
           </ul>
         </div>
 
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Power Sources</p>
+          <ul className="space-y-1">
+            <li>
+              <button 
+                onClick={() => toggleSection('powerSources')}
+                className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                <div className="flex items-center gap-3">
+                  <Battery className="h-5 w-5" />
+                  <span>Inverters</span>
+                </div>
+                {expandedSections.powerSources ? 
+                  <ChevronDown className="h-4 w-4" /> : 
+                  <ChevronRight className="h-4 w-4" />
+                }
+              </button>
+              
+              {expandedSections.powerSources && (
+                <ul className="mt-1 ml-8 space-y-1">
+                  <li>
+                    <Link href="/source-monitor?source=inverter1">
+                      <a className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                        location.includes('/source-monitor') && location.includes('inverter1')
+                          ? "bg-primary-50 dark:bg-slate-700 text-primary-600 dark:text-primary-400 font-medium" 
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      }`}>
+                        <Battery className="h-4 w-4" />
+                        <span>Inverter 1</span>
+                      </a>
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/source-monitor?source=inverter2">
+                      <a className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                        location.includes('/source-monitor') && location.includes('inverter2')
+                          ? "bg-primary-50 dark:bg-slate-700 text-primary-600 dark:text-primary-400 font-medium" 
+                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                      }`}>
+                        <Battery className="h-4 w-4" />
+                        <span>Inverter 2</span>
+                      </a>
+                    </Link>
+                  </li>
+                </ul>
+              )}
+            </li>
+            <li>
+              <Link href="/grid-monitoring">
+                <a className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                  isActive("/grid-monitoring") 
+                    ? "bg-primary-50 dark:bg-slate-700 text-primary-600 dark:text-primary-400 font-medium" 
+                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
+                }`}>
+                  <Zap className="h-5 w-5" />
+                  <span>Grid</span>
+                </a>
+              </Link>
+            </li>
+          </ul>
+        </div>
+        
         <div className="mb-6">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Settings</p>
           <ul className="space-y-1">

@@ -8,6 +8,7 @@ import EnergyHistory from "@/pages/energy-history";
 import GridMonitoring from "@/pages/grid-monitoring";
 import Generator from "@/pages/generator";
 import Weather from "@/pages/weather";
+import SourceMonitor from "@/pages/source-monitor";
 import DashboardLayout from "@/components/layouts/dashboard-layout";
 
 function Router() {
@@ -18,6 +19,7 @@ function Router() {
       <Route path="/grid-monitoring" component={GridMonitoring} />
       <Route path="/generator" component={Generator} />
       <Route path="/weather" component={Weather} />
+      <Route path="/source-monitor" component={SourceMonitor} />
       <Route component={NotFound} />
     </Switch>
   );
