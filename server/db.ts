@@ -1,21 +1,19 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from "ws";
+import * as schema from "@shared/schema";
 
-dotenv.config()
+neonConfig.webSocketConstructor = ws;
 
-// Create the MySQL connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT ? Number(process.env.DB_PORT) : 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
+}
 
-// Interfaces remain the same
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+export const db = drizzle({ client: pool, schema });
+
 interface PowerData {
   source_type: string;
   v1: number;
@@ -90,7 +88,6 @@ interface FrequencyRecord {
   time: Date;
 }
 
-// Get latest power data for a specific source
 export async function getLatestPowerData(source: string): Promise<PowerData> {
   const [rows] = await pool.query(
     `SELECT 
@@ -117,7 +114,6 @@ export async function getLatestPowerData(source: string): Promise<PowerData> {
   return (rows as any[])[0] as PowerData;
 }
 
-// Get latest power data for all sources
 export async function getAllSourcesLatestData(): Promise<PowerData[]> {
   const [rows] = await pool.query(
     `SELECT 
@@ -143,7 +139,6 @@ export async function getAllSourcesLatestData(): Promise<PowerData[]> {
   return rows as PowerData[];
 }
 
-// Get historical power data for a specific source
 export async function getHistoricalPowerData(source: string, hours: number = 24): Promise<PowerHistoryRecord[]> {
   const [rows] = await pool.query(
     `SELECT 
@@ -160,7 +155,6 @@ export async function getHistoricalPowerData(source: string, hours: number = 24)
   return rows as PowerHistoryRecord[];
 }
 
-// Get power distribution across all sources
 export async function getPowerSourceDistribution(): Promise<{ name: string; value: number }[]> {
   const [rows] = await pool.query(
     `SELECT 
@@ -187,7 +181,6 @@ export async function getPowerSourceDistribution(): Promise<{ name: string; valu
 }
 
 
-// Get voltage data
 export async function getVoltageData(source?: string): Promise<VoltageRecord[]> {
   const query = source 
     ? `SELECT v1, v2, v3, time 
@@ -205,7 +198,6 @@ export async function getVoltageData(source?: string): Promise<VoltageRecord[]> 
   return rows as VoltageRecord[];
 }
 
-// Get current data
 export async function getCurrentData(source?: string): Promise<CurrentRecord[]> {
   const query = source 
     ? `SELECT a1, a2, a3, time 
@@ -223,7 +215,6 @@ export async function getCurrentData(source?: string): Promise<CurrentRecord[]> 
   return rows as CurrentRecord[];
 }
 
-// Get power factor data
 export async function getPowerFactorData(source?: string): Promise<PowerFactorRecord[]> {
   const query = source 
     ? `SELECT pf1, pf2, pf3, pft, time 
@@ -241,7 +232,6 @@ export async function getPowerFactorData(source?: string): Promise<PowerFactorRe
   return rows as PowerFactorRecord[];
 }
 
-// Get frequency data
 export async function getFrequencyData(source?: string): Promise<FrequencyRecord[]> {
   const query = source 
     ? `SELECT hz, time 

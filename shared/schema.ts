@@ -33,8 +33,7 @@ export const kpis = pgTable("kpis", {
   timestamp: timestamp("timestamp").defaultNow().notNull(),
 });
 
-// Energy production data
-// Common table for all power sources
+// Power source data table
 export const powerSourceData = pgTable("power_source_data", {
   id: serial("id").primaryKey(),
   source_type: text("source_type").notNull(), // 'grid', 'generator', 'inverter'
@@ -138,8 +137,9 @@ export const insertKpiSchema = createInsertSchema(kpis).omit({
   timestamp: true,
 });
 
-export const insertEnergyDataSchema = createInsertSchema(energyData).omit({
+export const insertPowerSourceDataSchema = createInsertSchema(powerSourceData).omit({
   id: true,
+  time: true,
 });
 
 export const insertSystemComponentSchema = createInsertSchema(systemComponents).omit({
@@ -174,8 +174,8 @@ export type Weather = typeof weatherData.$inferSelect;
 export type InsertKpi = z.infer<typeof insertKpiSchema>;
 export type Kpi = typeof kpis.$inferSelect;
 
-export type InsertEnergyData = z.infer<typeof insertEnergyDataSchema>;
-export type EnergyRecord = typeof energyData.$inferSelect;
+export type InsertPowerSourceData = z.infer<typeof insertPowerSourceDataSchema>;
+export type PowerSourceData = typeof powerSourceData.$inferSelect;
 
 export type InsertSystemComponent = z.infer<typeof insertSystemComponentSchema>;
 export type SystemComponent = typeof systemComponents.$inferSelect;
