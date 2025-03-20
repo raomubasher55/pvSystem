@@ -1,40 +1,40 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal } from "drizzle-orm/pg-core";
+import { mysqlTable, text, int, boolean, timestamp, json, decimal } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Base power source schema factory
-const createPowerSourceTable = (tableName: string) => pgTable(tableName, {
-  id: serial("id").primaryKey(),
-  v1: decimal("v1").notNull(),
-  v2: decimal("v2").notNull(),
-  v3: decimal("v3").notNull(),
-  v12: decimal("v12").notNull(),
-  v23: decimal("v23").notNull(),
-  v31: decimal("v31").notNull(),
-  a1: decimal("a1").notNull(),
-  a2: decimal("a2").notNull(),
-  a3: decimal("a3").notNull(),
-  kva1: decimal("kva1").notNull(),
-  kva2: decimal("kva2").notNull(),
-  kva3: decimal("kva3").notNull(),
-  kvat: decimal("kvat").notNull(),
-  kvar1: decimal("kvar1").notNull(),
-  kvar2: decimal("kvar2").notNull(),
-  kvar3: decimal("kvar3").notNull(),
-  kvart: decimal("kvart").notNull(),
-  kw1: decimal("kw1").notNull(),
-  kw2: decimal("kw2").notNull(),
-  kw3: decimal("kw3").notNull(),
-  kwt: decimal("kwt").notNull(),
-  pf1: decimal("pf1").notNull(),
-  pf2: decimal("pf2").notNull(),
-  pf3: decimal("pf3").notNull(),
-  pft: decimal("pft").notNull(),
-  hz: decimal("hz").notNull(),
-  kwh_import: decimal("kwh_import").notNull(),
-  kwh_export: decimal("kwh_export").notNull(),
-  kvarh_import: decimal("kvarh_import").notNull(),
-  kvarh_export: decimal("kvarh_export").notNull(),
+const createPowerSourceTable = (tableName: string) => mysqlTable(tableName, {
+  id: int("id").primaryKey().autoincrement(),
+  v1: decimal("v1", { precision: 10, scale: 2 }).notNull(),
+  v2: decimal("v2", { precision: 10, scale: 2 }).notNull(),
+  v3: decimal("v3", { precision: 10, scale: 2 }).notNull(),
+  v12: decimal("v12", { precision: 10, scale: 2 }).notNull(),
+  v23: decimal("v23", { precision: 10, scale: 2 }).notNull(),
+  v31: decimal("v31", { precision: 10, scale: 2 }).notNull(),
+  a1: decimal("a1", { precision: 10, scale: 2 }).notNull(),
+  a2: decimal("a2", { precision: 10, scale: 2 }).notNull(),
+  a3: decimal("a3", { precision: 10, scale: 2 }).notNull(),
+  kva1: decimal("kva1", { precision: 10, scale: 2 }).notNull(),
+  kva2: decimal("kva2", { precision: 10, scale: 2 }).notNull(),
+  kva3: decimal("kva3", { precision: 10, scale: 2 }).notNull(),
+  kvat: decimal("kvat", { precision: 10, scale: 2 }).notNull(),
+  kvar1: decimal("kvar1", { precision: 10, scale: 2 }).notNull(),
+  kvar2: decimal("kvar2", { precision: 10, scale: 2 }).notNull(),
+  kvar3: decimal("kvar3", { precision: 10, scale: 2 }).notNull(),
+  kvart: decimal("kvart", { precision: 10, scale: 2 }).notNull(),
+  kw1: decimal("kw1", { precision: 10, scale: 2 }).notNull(),
+  kw2: decimal("kw2", { precision: 10, scale: 2 }).notNull(),
+  kw3: decimal("kw3", { precision: 10, scale: 2 }).notNull(),
+  kwt: decimal("kwt", { precision: 10, scale: 2 }).notNull(),
+  pf1: decimal("pf1", { precision: 10, scale: 2 }).notNull(),
+  pf2: decimal("pf2", { precision: 10, scale: 2 }).notNull(),
+  pf3: decimal("pf3", { precision: 10, scale: 2 }).notNull(),
+  pft: decimal("pft", { precision: 10, scale: 2 }).notNull(),
+  hz: decimal("hz", { precision: 10, scale: 2 }).notNull(),
+  kwh_import: decimal("kwh_import", { precision: 10, scale: 2 }).notNull(),
+  kwh_export: decimal("kwh_export", { precision: 10, scale: 2 }).notNull(),
+  kvarh_import: decimal("kvarh_import", { precision: 10, scale: 2 }).notNull(),
+  kvarh_export: decimal("kvarh_export", { precision: 10, scale: 2 }).notNull(),
   time: timestamp("time").defaultNow().notNull(),
 });
 
@@ -49,8 +49,8 @@ export const inverter2 = createPowerSourceTable("inverter2");
 // These tables have been removed. Now we only use the power source tables (grid1, grid2, generator1, generator2, inverter1, inverter2)
 
 // System alerts
-export const alerts = pgTable("alerts", {
-  id: serial("id").primaryKey(),
+export const alerts = mysqlTable("alerts", {
+  id: int("id").primaryKey().autoincrement(),
   status: text("status").notNull(),
   description: text("description").notNull(),
   component: text("component").notNull(),
@@ -59,12 +59,12 @@ export const alerts = pgTable("alerts", {
 });
 
 // Energy forecast
-export const forecastDays = pgTable("forecast_days", {
-  id: serial("id").primaryKey(),
+export const forecastDays = mysqlTable("forecast_days", {
+  id: int("id").primaryKey().autoincrement(),
   date: text("date").notNull(),
   weather: text("weather").notNull(),
   forecast: text("forecast").notNull(),
-  comparison: decimal("comparison").notNull(),
+  comparison: decimal("comparison", { precision: 10, scale: 2 }).notNull(),
 });
 
 // Create insert schemas for each table
