@@ -1,10 +1,10 @@
-import { mysqlTable, text, int, boolean, timestamp, json, decimal } from "drizzle-orm/mysql-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Base power source schema factory
-const createPowerSourceTable = (tableName: string) => mysqlTable(tableName, {
-  id: int("id").primaryKey().autoincrement(),
+const createPowerSourceTable = (tableName: string) => pgTable(tableName, {
+  id: serial("id").primaryKey(),
   v1: decimal("v1", { precision: 10, scale: 2 }).notNull(),
   v2: decimal("v2", { precision: 10, scale: 2 }).notNull(),
   v3: decimal("v3", { precision: 10, scale: 2 }).notNull(),
@@ -46,11 +46,11 @@ export const generator2 = createPowerSourceTable("generator2");
 export const inverter1 = createPowerSourceTable("inverter1");
 export const inverter2 = createPowerSourceTable("inverter2");
 
-// These tables have been removed. Now we only use the power source tables (grid1, grid2, generator1, generator2, inverter1, inverter2)
+// Tables for grid, generator, and inverter power sources
 
 // System alerts
-export const alerts = mysqlTable("alerts", {
-  id: int("id").primaryKey().autoincrement(),
+export const alerts = pgTable("alerts", {
+  id: serial("id").primaryKey(),
   status: text("status").notNull(),
   description: text("description").notNull(),
   component: text("component").notNull(),
@@ -59,8 +59,8 @@ export const alerts = mysqlTable("alerts", {
 });
 
 // Energy forecast
-export const forecastDays = mysqlTable("forecast_days", {
-  id: int("id").primaryKey().autoincrement(),
+export const forecastDays = pgTable("forecast_days", {
+  id: serial("id").primaryKey(),
   date: text("date").notNull(),
   weather: text("weather").notNull(),
   forecast: text("forecast").notNull(),
