@@ -2,13 +2,6 @@ import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal } fr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table (keeping from original)
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
 // Base power source schema factory
 const createPowerSourceTable = (tableName: string) => pgTable(tableName, {
   id: serial("id").primaryKey(),
@@ -53,62 +46,7 @@ export const generator2 = createPowerSourceTable("generator2");
 export const inverter1 = createPowerSourceTable("inverter1");
 export const inverter2 = createPowerSourceTable("inverter2");
 
-// Weather data table
-export const weatherData = pgTable("weather_data", {
-  id: serial("id").primaryKey(),
-  location: text("location").notNull(),
-  temperature: decimal("temperature").notNull(),
-  condition: text("condition").notNull(),
-  humidity: decimal("humidity").notNull(),
-  wind: decimal("wind").notNull(),
-  uvIndex: decimal("uv_index").notNull(),
-  visibility: decimal("visibility").notNull(),
-  solarIntensity: text("solar_intensity").notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-// KPI data table
-export const kpis = pgTable("kpis", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  value: text("value").notNull(),
-  change: decimal("change").notNull(),
-  type: text("type").notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-
-// System components
-export const systemComponents = pgTable("system_components", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  details: text("details").notNull(),
-  status: text("status").notNull(),
-  output: text("output").notNull(),
-  type: text("type").notNull(),
-});
-
-// Generator groups
-export const generatorGroups = pgTable("generator_groups", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  output: text("output").notNull(),
-  efficiency: decimal("efficiency").notNull(),
-});
-
-// Grid data
-export const gridData = pgTable("grid_data", {
-  id: serial("id").primaryKey(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-  import: decimal("import").notNull(),
-  importChange: decimal("import_change").notNull(),
-  export: decimal("export").notNull(),
-  exportChange: decimal("export_change").notNull(),
-  netBalance: text("net_balance").notNull(),
-  voltage: text("voltage").notNull(),
-  frequency: text("frequency").notNull(),
-  chartData: jsonb("chart_data").notNull(),
-});
+// These tables have been removed. Now we only use the power source tables (grid1, grid2, generator1, generator2, inverter1, inverter2)
 
 // System alerts
 export const alerts = pgTable("alerts", {
@@ -137,35 +75,7 @@ export const insertGenerator2Schema = createInsertSchema(generator2).omit({ id: 
 export const insertInverter1Schema = createInsertSchema(inverter1).omit({ id: true, time: true });
 export const insertInverter2Schema = createInsertSchema(inverter2).omit({ id: true, time: true });
 
-// Schemas for data insertion
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export const insertWeatherSchema = createInsertSchema(weatherData).omit({
-  id: true,
-  timestamp: true,
-});
-
-export const insertKpiSchema = createInsertSchema(kpis).omit({
-  id: true,
-  timestamp: true,
-});
-
-
-export const insertSystemComponentSchema = createInsertSchema(systemComponents).omit({
-  id: true,
-});
-
-export const insertGeneratorGroupSchema = createInsertSchema(generatorGroups).omit({
-  id: true,
-});
-
-export const insertGridDataSchema = createInsertSchema(gridData).omit({
-  id: true,
-  timestamp: true,
-});
+// We only need insert schemas for the power source tables
 
 export const insertAlertSchema = createInsertSchema(alerts).omit({
   id: true,
@@ -184,25 +94,7 @@ export type Generator2Data = typeof generator2.$inferSelect;
 export type Inverter1Data = typeof inverter1.$inferSelect;
 export type Inverter2Data = typeof inverter2.$inferSelect;
 
-// Type exports
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
-export type InsertWeather = z.infer<typeof insertWeatherSchema>;
-export type Weather = typeof weatherData.$inferSelect;
-
-export type InsertKpi = z.infer<typeof insertKpiSchema>;
-export type Kpi = typeof kpis.$inferSelect;
-
-
-export type InsertSystemComponent = z.infer<typeof insertSystemComponentSchema>;
-export type SystemComponent = typeof systemComponents.$inferSelect;
-
-export type InsertGeneratorGroup = z.infer<typeof insertGeneratorGroupSchema>;
-export type GeneratorGroup = typeof generatorGroups.$inferSelect;
-
-export type InsertGridData = z.infer<typeof insertGridDataSchema>;
-export type GridRecord = typeof gridData.$inferSelect;
+// We only need types for the power source tables and the remaining alert and forecast tables
 
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Alert = typeof alerts.$inferSelect;

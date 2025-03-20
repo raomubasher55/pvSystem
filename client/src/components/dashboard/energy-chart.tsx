@@ -38,12 +38,7 @@ type EnergyDistribution = {
   value: number;
 };
 
-// Mock distribution data - remove this when your API is working
-const mockDistributionData = [
-  { name: "Home Usage", value: 70 },
-  { name: "Grid Export", value: 20 },
-  { name: "Battery", value: 10 },
-];
+// Remove mock data as we are using real data from API
 
 export default function EnergyChart() {
   // Use the actual API response type
@@ -53,8 +48,6 @@ export default function EnergyChart() {
 
   const { data: distributionData, isLoading: isLoadingDistribution } = useQuery<EnergyDistribution[]>({
     queryKey: ['/api/energy/distribution'],
-    // Add this to use mock data until your API works
-    initialData: mockDistributionData,
   });
 
   // Transform API data to the format expected by the chart

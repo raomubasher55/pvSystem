@@ -1,6 +1,4 @@
 import { 
-  users, type User, type InsertUser, weatherData, systemComponents, generatorGroups,
-  Weather, Kpi, SystemComponent, GeneratorGroup,
   Alert, ForecastDay, grid1, grid2, generator1, generator2, inverter1, inverter2, alerts, forecastDays,
   type Grid1Data, type Grid2Data, type Generator1Data, type Generator2Data,
   type Inverter1Data, type Inverter2Data
@@ -10,24 +8,13 @@ import { eq, desc, sql } from "drizzle-orm";
 
 // Interface for the storage operations
 export interface IStorage {
-  // User operations
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  // Weather data operations
-  getWeatherData(): Promise<Weather[]>;
-  // KPI operations
-  getKpis(): Promise<Kpi[]>;
   // Energy data operations
   getEnergyData(): Promise<any[]>;
   getEnergyDistribution(): Promise<any[]>;
   getEnergyHistoryDaily(): Promise<any[]>;
   getEnergyHistoryMonthly(): Promise<any[]>;
   getEnergyHistoryYearly(): Promise<any[]>;
-  // System status operations
-  getSystemComponents(): Promise<SystemComponent[]>;
   // Generator operations
-  getGeneratorGroups(): Promise<GeneratorGroup[]>;
   getGeneratorTotalOutput(): Promise<string>;
   getGeneratorPerformanceHourly(): Promise<any[]>;
   getGeneratorTemperature(): Promise<any[]>;
@@ -46,92 +33,6 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
-  }
-
-  async getWeatherData(): Promise<Weather[]> {
-    const weatherRecords = await db.select().from(weatherData);
-    return weatherRecords;
-  }
-  
-  async getKpis(): Promise<Kpi[]> {
-    const [latestGrid1] = await db.select().from(grid1).orderBy(desc(grid1.time)).limit(1);
-    const [latestGenerator1] = await db.select().from(generator1).orderBy(desc(generator1.time)).limit(1);
-    const [latestInverter1] = await db.select().from(inverter1).orderBy(desc(inverter1.time)).limit(1);
-
-    const kpis = [];
-
-    // Total System Power
-    const totalPower = Number(latestGrid1?.kwt || 0) + Number(latestGenerator1?.kwt || 0) + Number(latestInverter1?.kwt || 0);
-    kpis.push({
-      id: 1,
-      title: "Total System Power",
-      value: `${Number(totalPower).toFixed(2)} kW`,
-      change: String(0), 
-      type: "power",
-      timestamp: new Date()
-    });
-
-    // Source-specific KPIs
-    if (latestGrid1) {
-      const change = Number(latestGrid1.kwh_export) > 0 
-        ? ((Number(latestGrid1.kwh_export) - Number(latestGrid1.kwh_import)) / Number(latestGrid1.kwh_import)) * 100 
-        : 0;
-      kpis.push({
-        id: 2,
-        title: "Grid Power",
-        value: `${Number(latestGrid1.kwt).toFixed(2)} kW`,
-        change: String(change.toFixed(1)), 
-        type: "grid",
-        timestamp: latestGrid1.time
-      });
-    }
-
-    if (latestGenerator1) {
-      const change = Number(latestGenerator1.kwh_export) > 0 
-        ? ((Number(latestGenerator1.kwh_export) - Number(latestGenerator1.kwh_import)) / Number(latestGenerator1.kwh_import)) * 100 
-        : 0;
-      kpis.push({
-        id: 3,
-        title: "Generator Power",
-        value: `${Number(latestGenerator1.kwt).toFixed(2)} kW`,
-        change: String(change.toFixed(1)), 
-        type: "generator",
-        timestamp: latestGenerator1.time
-      });
-    }
-
-    if (latestInverter1) {
-      const change = Number(latestInverter1.kwh_export) > 0 
-        ? ((Number(latestInverter1.kwh_export) - Number(latestInverter1.kwh_import)) / Number(latestInverter1.kwh_import)) * 100 
-        : 0;
-      kpis.push({
-        id: 4,
-        title: "Inverter Power",
-        value: `${Number(latestInverter1.kwt).toFixed(2)} kW`,
-        change: String(change.toFixed(1)), 
-        type: "inverter",
-        timestamp: latestInverter1.time
-      });
-    }
-
-    return kpis;
-  }
   async getEnergyData(): Promise<any[]> {
     // Fetch data from all power sources and combine it
     const timeframe = sql`time >= NOW() - INTERVAL '24 HOUR'`;
@@ -314,13 +215,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getSystemComponents(): Promise<SystemComponent[]> {
-    return db.select().from(systemComponents);
-  }
 
-  async getGeneratorGroups(): Promise<GeneratorGroup[]> {
-    return db.select().from(generatorGroups);
-  }
   async getGeneratorTotalOutput(): Promise<string> {
     // Calculate total power output from generator sources
     const [latestGenerator1] = await db.select().from(generator1).orderBy(desc(generator1.time)).limit(1);
@@ -644,16 +539,12 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getWeatherForecast(): Promise<any[]> {
-    // Get weather data for forecasting
-    const weatherData = await this.getWeatherData();
-    
-    if (weatherData.length === 0) {
-      return [];
-    }
-    
-    // Generate a 5-day forecast based on current weather
+    // Generate a 5-day forecast
     const forecast = [];
     const now = new Date();
+    
+    // Predefined weather conditions for simulation
+    const conditions = ["Sunny", "Partly Cloudy", "Cloudy", "Rainy"];
     
     for (let i = 0; i < 5; i++) {
       const forecastDate = new Date(now);
@@ -665,14 +556,32 @@ export class DatabaseStorage implements IStorage {
         day: 'numeric'
       });
       
-      // Use random weather condition from the existing weather data
-      const randomWeather = weatherData[Math.floor(Math.random() * weatherData.length)];
+      // Use a random condition
+      const condition = conditions[Math.floor(Math.random() * conditions.length)];
+      // Generate a reasonable temperature based on condition
+      let temperature;
+      switch (condition) {
+        case "Sunny":
+          temperature = Math.round(25 + Math.random() * 5); // 25-30C
+          break;
+        case "Partly Cloudy":
+          temperature = Math.round(20 + Math.random() * 5); // 20-25C
+          break;
+        case "Cloudy":
+          temperature = Math.round(18 + Math.random() * 4); // 18-22C
+          break;
+        case "Rainy":
+          temperature = Math.round(15 + Math.random() * 5); // 15-20C
+          break;
+        default:
+          temperature = 22; // default
+      }
       
       forecast.push({
         date: dateString,
-        condition: randomWeather.condition,
-        temperature: randomWeather.temperature,
-        precipitation: Math.random() * 20
+        condition: condition,
+        temperature: temperature,
+        precipitation: condition === "Rainy" ? Math.random() * 20 : 0
       });
     }
     
@@ -680,24 +589,9 @@ export class DatabaseStorage implements IStorage {
   }
   
   async getSolarRadiation(): Promise<any[]> {
-    // Get weather data for solar radiation estimates
-    const weatherData = await this.getWeatherData();
-    
-    if (weatherData.length === 0) {
-      return [];
-    }
-    
-    // Generate hourly solar radiation data based on weather conditions
+    // Generate hourly solar radiation data based on time of day
     const hourlyData = [];
     const hours = 24;
-    
-    // Base radiation levels based on weather condition
-    const radiationMap: Record<string, number> = {
-      "Sunny": 900,
-      "Partly Cloudy": 600,
-      "Cloudy": 300,
-      "Rainy": 100
-    };
     
     for (let i = 0; i < hours; i++) {
       const hourTime = new Date();
@@ -720,12 +614,14 @@ export class DatabaseStorage implements IStorage {
         timeMultiplier = 1 - Math.abs(hour - 12) / 6;
       }
       
-      // Use random weather from the data
-      const randomWeather = weatherData[Math.floor(Math.random() * weatherData.length)];
-      const baseRadiation = radiationMap[randomWeather.condition] || 300;
+      // Base radiation 
+      const baseRadiation = 800; // maximum solar radiation (W/m²)
+      
+      // Add some random variation
+      const randomFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
       
       // Calculate radiation value
-      const radiation = Math.round(baseRadiation * timeMultiplier);
+      const radiation = Math.round(baseRadiation * timeMultiplier * randomFactor);
       
       hourlyData.push({
         time: timeLabel,
