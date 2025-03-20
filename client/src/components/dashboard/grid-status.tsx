@@ -16,8 +16,15 @@ import { CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 
-export default function GridStatus() {
-  const [timeRange, setTimeRange] = useState('last-24h');
+interface GridStatusProps {
+  timeRange?: string;
+}
+
+export default function GridStatus({ timeRange: externalTimeRange }: GridStatusProps) {
+  const [localTimeRange, setLocalTimeRange] = useState('last-24h');
+  
+  // Use external timeRange if provided, otherwise use local state
+  const timeRange = externalTimeRange || localTimeRange;
   
   const { data, isLoading } = useQuery<GridData>({
     queryKey: ['/api/grid/status', timeRange],
@@ -43,7 +50,7 @@ export default function GridStatus() {
           </span>
           <Select 
             value={timeRange} 
-            onValueChange={(value) => setTimeRange(value)}
+            onValueChange={(value) => setLocalTimeRange(value)}
           >
             <SelectTrigger className="w-[150px] h-8 text-sm">
               <SelectValue placeholder="Select timeframe" />

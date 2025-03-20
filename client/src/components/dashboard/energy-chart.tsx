@@ -47,8 +47,15 @@ type EnergyDistribution = {
 
 // Remove mock data as we are using real data from API
 
-export default function EnergyChart() {
-  const [timeRange, setTimeRange] = useState('last-24h');
+interface EnergyChartProps {
+  timeRange?: string;
+}
+
+export default function EnergyChart({ timeRange: externalTimeRange }: EnergyChartProps) {
+  const [localTimeRange, setLocalTimeRange] = useState('last-24h');
+  
+  // Use external timeRange if provided, otherwise use local state
+  const timeRange = externalTimeRange || localTimeRange;
   
   // Use the new energy chart data API endpoint with time range
   const { data: chartData, isLoading: isLoadingEnergy } = useQuery<ChartEnergyData[]>({
@@ -98,7 +105,7 @@ export default function EnergyChart() {
             <div className="flex items-center mr-4">
               <Select 
                 value={timeRange} 
-                onValueChange={(value) => setTimeRange(value)}
+                onValueChange={(value) => setLocalTimeRange(value)}
               >
                 <SelectTrigger className="w-[150px] h-8 text-sm">
                   <SelectValue placeholder="Select timeframe" />
