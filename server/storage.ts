@@ -1,7 +1,9 @@
 import { 
   users, type User, type InsertUser,
   Weather, Kpi, SystemComponent, GeneratorGroup,
-  Alert, ForecastDay, EnergyRecord, GridRecord, powerSourceData
+  Alert, ForecastDay, grid1, grid2, generator1, generator2, inverter1, inverter2,
+  type Grid1Data, type Grid2Data, type Generator1Data, type Generator2Data,
+  type Inverter1Data, type Inverter2Data
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql } from "drizzle-orm";
@@ -17,11 +19,11 @@ export interface IStorage {
   // KPI operations
   getKpis(): Promise<Kpi[]>;
   // Energy data operations
-  getEnergyData(): Promise<EnergyRecord[]>;
+  getEnergyData(): Promise<any[]>;
   getEnergyDistribution(): Promise<any[]>;
-  getEnergyHistoryDaily(): Promise<EnergyRecord[]>;
-  getEnergyHistoryMonthly(): Promise<EnergyRecord[]>;
-  getEnergyHistoryYearly(): Promise<EnergyRecord[]>;
+  getEnergyHistoryDaily(): Promise<any[]>;
+  getEnergyHistoryMonthly(): Promise<any[]>;
+  getEnergyHistoryYearly(): Promise<any[]>;
   // System status operations
   getSystemComponents(): Promise<SystemComponent[]>;
   // Generator operations
@@ -30,7 +32,7 @@ export interface IStorage {
   getGeneratorPerformanceHourly(): Promise<any[]>;
   getGeneratorTemperature(): Promise<any[]>;
   // Grid operations
-  getGridStatus(): Promise<GridRecord>;
+  getGridStatus(): Promise<any>;
   getGridVoltage(): Promise<any[]>;
   getGridFrequency(): Promise<any[]>;
   // Alerts operations
@@ -64,65 +66,86 @@ export class DatabaseStorage implements IStorage {
 
   async getWeatherData(): Promise<Weather[]> { return []; }
   async getKpis(): Promise<Kpi[]> {
-    const powerData = await db.select().from(powerSourceData)
-      .where(sql`time >= NOW() - INTERVAL '24 HOUR'`)
-      .orderBy(desc(powerSourceData.time));
+    const [latestGrid1] = await db.select().from(grid1).orderBy(desc(grid1.time)).limit(1);
+    const [latestGenerator1] = await db.select().from(generator1).orderBy(desc(generator1.time)).limit(1);
+    const [latestInverter1] = await db.select().from(inverter1).orderBy(desc(inverter1.time)).limit(1);
 
-    // Calculate KPIs from power source data
     const kpis = [];
 
     // Total System Power
-    const totalPower = powerData.reduce((sum, source) => sum + Number(source.kwt), 0);
+    const totalPower = (latestGrid1?.kwt || 0) + (latestGenerator1?.kwt || 0) + (latestInverter1?.kwt || 0);
     kpis.push({
       id: 1,
       title: "Total System Power",
-      value: `${totalPower.toFixed(2)} kW`,
+      value: `${Number(totalPower).toFixed(2)} kW`,
       change: String(0), 
       type: "power",
       timestamp: new Date()
     });
 
     // Source-specific KPIs
-    const sources = ['grid', 'generator', 'inverter'];
-    sources.forEach((sourceType, index) => {
-      const sourceData = powerData.find(d => d.source_type === sourceType);
-      if (sourceData) {
-        const change = Number(sourceData.kwh_export) > 0 
-          ? ((Number(sourceData.kwh_export) - Number(sourceData.kwh_import)) / Number(sourceData.kwh_import)) * 100 
-          : 0;
+    if (latestGrid1) {
+      const change = Number(latestGrid1.kwh_export) > 0 
+        ? ((Number(latestGrid1.kwh_export) - Number(latestGrid1.kwh_import)) / Number(latestGrid1.kwh_import)) * 100 
+        : 0;
+      kpis.push({
+        id: 2,
+        title: "Grid Power",
+        value: `${Number(latestGrid1.kwt).toFixed(2)} kW`,
+        change: String(change.toFixed(1)), 
+        type: "grid",
+        timestamp: latestGrid1.time
+      });
+    }
 
-        kpis.push({
-          id: index + 2,
-          title: `${sourceType.charAt(0).toUpperCase() + sourceType.slice(1)} Power`,
-          value: `${Number(sourceData.kwt).toFixed(2)} kW`,
-          change: String(change.toFixed(1)), 
-          type: sourceType,
-          timestamp: sourceData.time
-        });
-      }
-    });
+    if (latestGenerator1) {
+      const change = Number(latestGenerator1.kwh_export) > 0 
+        ? ((Number(latestGenerator1.kwh_export) - Number(latestGenerator1.kwh_import)) / Number(latestGenerator1.kwh_import)) * 100 
+        : 0;
+      kpis.push({
+        id: 3,
+        title: "Generator Power",
+        value: `${Number(latestGenerator1.kwt).toFixed(2)} kW`,
+        change: String(change.toFixed(1)), 
+        type: "generator",
+        timestamp: latestGenerator1.time
+      });
+    }
+
+    if (latestInverter1) {
+      const change = Number(latestInverter1.kwh_export) > 0 
+        ? ((Number(latestInverter1.kwh_export) - Number(latestInverter1.kwh_import)) / Number(latestInverter1.kwh_import)) * 100 
+        : 0;
+      kpis.push({
+        id: 4,
+        title: "Inverter Power",
+        value: `${Number(latestInverter1.kwt).toFixed(2)} kW`,
+        change: String(change.toFixed(1)), 
+        type: "inverter",
+        timestamp: latestInverter1.time
+      });
+    }
 
     return kpis;
   }
-  async getEnergyData(): Promise<EnergyRecord[]> {
-    const result = await db.select().from(powerSourceData)
+  async getEnergyData(): Promise<any[]> {
+    const result = await db.select().from(grid1)
       .where(sql`time >= NOW() - INTERVAL '24 HOUR'`)
-      .orderBy(powerSourceData.time);
+      .orderBy(grid1.time);
     return result;
   }
   async getEnergyDistribution(): Promise<any[]> { return []; }
-  async getEnergyHistoryDaily(): Promise<EnergyRecord[]> { return []; }
-  async getEnergyHistoryMonthly(): Promise<EnergyRecord[]> { return []; }
-  async getEnergyHistoryYearly(): Promise<EnergyRecord[]> { return []; }
+  async getEnergyHistoryDaily(): Promise<any[]> { return []; }
+  async getEnergyHistoryMonthly(): Promise<any[]> { return []; }
+  async getEnergyHistoryYearly(): Promise<any[]> { return []; }
   async getSystemComponents(): Promise<SystemComponent[]> { return []; }
   async getGeneratorGroups(): Promise<GeneratorGroup[]> { return []; }
   async getGeneratorTotalOutput(): Promise<string> { return "0 kW"; }
   async getGeneratorPerformanceHourly(): Promise<any[]> { return []; }
   async getGeneratorTemperature(): Promise<any[]> { return []; }
-  async getGridStatus(): Promise<GridRecord> {
-    const [latestGrid] = await db.select().from(powerSourceData)
-      .where(eq(powerSourceData.source_type, 'grid'))
-      .orderBy(desc(powerSourceData.time))
+  async getGridStatus(): Promise<any> {
+    const [latestGrid] = await db.select().from(grid1)
+      .orderBy(desc(grid1.time))
       .limit(1);
 
     if (!latestGrid) {

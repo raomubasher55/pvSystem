@@ -48,6 +48,7 @@ interface PowerData {
   kvarh_export: number;
   time: Date;
 }
+
 interface PowerHistoryRecord {
   total_power: number;
   kwh_import: number;
@@ -55,10 +56,185 @@ interface PowerHistoryRecord {
   time: Date;
 }
 
-interface PowerDistributionRecord {
-  grid_import: number;
-  grid_export: number;
-  total_generation: number;
+export async function getLatestPowerData(source: string): Promise<PowerData> {
+  let tableName;
+  if (source.startsWith('grid')) {
+    tableName = source === 'grid1' ? 'grid1' : 'grid2';
+  } else if (source.startsWith('generator')) {
+    tableName = source === 'generator1' ? 'generator1' : 'generator2';
+  } else if (source.startsWith('inverter')) {
+    tableName = source === 'inverter1' ? 'inverter1' : 'inverter2';
+  } else {
+    throw new Error(`Invalid source type: ${source}`);
+  }
+
+  const [rows] = await pool.query(
+    `SELECT *, '${source}' as source_type
+     FROM ${tableName}
+     ORDER BY time DESC 
+     LIMIT 1`
+  );
+
+  if (!rows || (rows as any[]).length === 0) {
+    throw new Error(`No power data available for source: ${source}`);
+  }
+  return { ...(rows as any[])[0], source_type: source };
+}
+
+export async function getAllSourcesLatestData(): Promise<PowerData[]> {
+  const [rows] = await pool.query(`
+    (SELECT *, 'grid1' as source_type FROM grid1 ORDER BY time DESC LIMIT 1)
+    UNION ALL
+    (SELECT *, 'generator1' as source_type FROM generator1 ORDER BY time DESC LIMIT 1)
+    UNION ALL
+    (SELECT *, 'inverter1' as source_type FROM inverter1 ORDER BY time DESC LIMIT 1)
+    ORDER BY time DESC
+  `);
+
+  return rows as PowerData[];
+}
+
+export async function getHistoricalPowerData(source: string, hours: number = 24): Promise<PowerHistoryRecord[]> {
+  let tableName;
+  if (source.startsWith('grid')) {
+    tableName = source === 'grid1' ? 'grid1' : 'grid2';
+  } else if (source.startsWith('generator')) {
+    tableName = source === 'generator1' ? 'generator1' : 'generator2';
+  } else if (source.startsWith('inverter')) {
+    tableName = source === 'inverter1' ? 'inverter1' : 'inverter2';
+  } else {
+    throw new Error(`Invalid source type: ${source}`);
+  }
+
+  const [rows] = await pool.query(
+    `SELECT 
+      kwt as total_power,
+      kwh_import,
+      kwh_export,
+      time
+    FROM ${tableName}
+    WHERE time >= NOW() - INTERVAL '${hours} HOURS'
+    ORDER BY time ASC`
+  );
+  return rows as PowerHistoryRecord[];
+}
+
+export async function getPowerSourceDistribution(): Promise<{ name: string; value: number }[]> {
+  const [rows] = await pool.query(`
+    SELECT 
+      source_name,
+      SUM(kwt) as total_power
+    FROM (
+      SELECT 'Grid 1' as source_name, kwt FROM grid1 WHERE time >= NOW() - INTERVAL '24 HOUR'
+      UNION ALL
+      SELECT 'Generator 1' as source_name, kwt FROM generator1 WHERE time >= NOW() - INTERVAL '24 HOUR'
+      UNION ALL
+      SELECT 'Inverter 1' as source_name, kwt FROM inverter1 WHERE time >= NOW() - INTERVAL '24 HOUR'
+    ) AS combined
+    GROUP BY source_name
+  `);
+
+  const results = rows as Array<{
+    source_name: string;
+    total_power: number;
+  }>;
+
+  return results.map(row => ({
+    name: row.source_name,
+    value: Number(row.total_power) || 0
+  }));
+}
+
+export async function getVoltageData(source?: string): Promise<VoltageRecord[]> {
+  let query;
+  if (source) {
+    const tableName = source.includes('1') ? `${source.split('1')[0]}1` : `${source.split('2')[0]}2`;
+    query = `SELECT v1, v2, v3, time FROM ${tableName} WHERE time >= NOW() - INTERVAL '1 HOUR' ORDER BY time ASC`;
+  } else {
+    query = `
+      SELECT v1, v2, v3, time FROM grid1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT v1, v2, v3, time FROM generator1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT v1, v2, v3, time FROM inverter1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      ORDER BY time ASC
+    `;
+  }
+
+  const [rows] = await pool.query(query);
+  return rows as VoltageRecord[];
+}
+
+export async function getCurrentData(source?: string): Promise<CurrentRecord[]> {
+  let query;
+  if (source) {
+    const tableName = source.includes('1') ? `${source.split('1')[0]}1` : `${source.split('2')[0]}2`;
+    query = `SELECT a1, a2, a3, time FROM ${tableName} WHERE time >= NOW() - INTERVAL '1 HOUR' ORDER BY time ASC`;
+  } else {
+    query = `
+      SELECT a1, a2, a3, time FROM grid1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT a1, a2, a3, time FROM generator1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT a1, a2, a3, time FROM inverter1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      ORDER BY time ASC
+    `;
+  }
+
+  const [rows] = await pool.query(query);
+  return rows as CurrentRecord[];
+}
+
+export async function getPowerFactorData(source?: string): Promise<PowerFactorRecord[]> {
+  let query;
+  if (source) {
+    const tableName = source.includes('1') ? `${source.split('1')[0]}1` : `${source.split('2')[0]}2`;
+    query = `SELECT pf1, pf2, pf3, pft, time FROM ${tableName} WHERE time >= NOW() - INTERVAL '1 HOUR' ORDER BY time ASC`;
+  } else {
+    query = `
+      SELECT pf1, pf2, pf3, pft, time FROM grid1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT pf1, pf2, pf3, pft, time FROM generator1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT pf1, pf2, pf3, pft, time FROM inverter1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      ORDER BY time ASC
+    `;
+  }
+
+  const [rows] = await pool.query(query);
+  return rows as PowerFactorRecord[];
+}
+
+export async function getFrequencyData(source?: string): Promise<FrequencyRecord[]> {
+  let query;
+  if (source) {
+    const tableName = source.includes('1') ? `${source.split('1')[0]}1` : `${source.split('2')[0]}2`;
+    query = `SELECT hz, time FROM ${tableName} WHERE time >= NOW() - INTERVAL '1 HOUR' ORDER BY time ASC`;
+  } else {
+    query = `
+      SELECT hz, time FROM grid1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT hz, time FROM generator1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      UNION ALL
+      SELECT hz, time FROM inverter1 
+      WHERE time >= NOW() - INTERVAL '1 HOUR'
+      ORDER BY time ASC
+    `;
+  }
+
+  const [rows] = await pool.query(query);
+  return rows as FrequencyRecord[];
 }
 
 interface VoltageRecord {
@@ -86,165 +262,4 @@ interface PowerFactorRecord {
 interface FrequencyRecord {
   hz: number;
   time: Date;
-}
-
-export async function getLatestPowerData(source: string): Promise<PowerData> {
-  const [rows] = await pool.query(
-    `SELECT 
-      source_type, v1, v2, v3, v12, v23, v31,
-      a1, a2, a3,
-      kva1, kva2, kva3, kvat,
-      kvar1, kvar2, kvar3, kvart,
-      kw1, kw2, kw3, kwt,
-      pf1, pf2, pf3, pft,
-      hz,
-      kwh_import, kwh_export,
-      kvarh_import, kvarh_export,
-      time
-    FROM power_source_data 
-    WHERE source_type = ?
-    ORDER BY time DESC 
-    LIMIT 1`,
-    [source]
-  );
-
-  if (!rows || (rows as any[]).length === 0) {
-    throw new Error(`No power data available for source: ${source}`);
-  }
-  return (rows as any[])[0] as PowerData;
-}
-
-export async function getAllSourcesLatestData(): Promise<PowerData[]> {
-  const [rows] = await pool.query(
-    `SELECT 
-      source_type, v1, v2, v3, v12, v23, v31,
-      a1, a2, a3,
-      kva1, kva2, kva3, kvat,
-      kvar1, kvar2, kvar3, kvart,
-      kw1, kw2, kw3, kwt,
-      pf1, pf2, pf3, pft,
-      hz,
-      kwh_import, kwh_export,
-      kvarh_import, kvarh_export,
-      time
-    FROM power_source_data 
-    WHERE source_type IN ('grid', 'generator', 'inverter')
-    AND time = (
-      SELECT MAX(time) 
-      FROM power_source_data ps2 
-      WHERE ps2.source_type = power_source_data.source_type
-    )`
-  );
-
-  return rows as PowerData[];
-}
-
-export async function getHistoricalPowerData(source: string, hours: number = 24): Promise<PowerHistoryRecord[]> {
-  const [rows] = await pool.query(
-    `SELECT 
-      kwt as total_power,
-      kwh_import,
-      kwh_export,
-      time
-    FROM power_source_data 
-    WHERE source_type = ?
-    AND time >= NOW() - INTERVAL ? HOUR
-    ORDER BY time ASC`,
-    [source, hours]
-  );
-  return rows as PowerHistoryRecord[];
-}
-
-export async function getPowerSourceDistribution(): Promise<{ name: string; value: number }[]> {
-  const [rows] = await pool.query(
-    `SELECT 
-      source_type,
-      SUM(kwh_import) as total_import,
-      SUM(kwh_export) as total_export,
-      SUM(kwt) as total_power
-    FROM power_source_data 
-    WHERE time >= NOW() - INTERVAL '24' HOUR
-    GROUP BY source_type`
-  );
-
-  const results = rows as Array<{
-    source_type: string;
-    total_import: number;
-    total_export: number;
-    total_power: number;
-  }>;
-
-  return results.map(row => ({
-    name: row.source_type.charAt(0).toUpperCase() + row.source_type.slice(1),
-    value: row.total_power || 0
-  }));
-}
-
-
-export async function getVoltageData(source?: string): Promise<VoltageRecord[]> {
-  const query = source 
-    ? `SELECT v1, v2, v3, time 
-       FROM power_source_data 
-       WHERE source_type = ? 
-       AND time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`
-    : `SELECT v1, v2, v3, time 
-       FROM power_source_data 
-       WHERE time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`;
-
-  const params = source ? [source] : [];
-  const [rows] = await pool.query(query, params);
-  return rows as VoltageRecord[];
-}
-
-export async function getCurrentData(source?: string): Promise<CurrentRecord[]> {
-  const query = source 
-    ? `SELECT a1, a2, a3, time 
-       FROM power_source_data 
-       WHERE source_type = ? 
-       AND time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`
-    : `SELECT a1, a2, a3, time 
-       FROM power_source_data 
-       WHERE time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`;
-
-  const params = source ? [source] : [];
-  const [rows] = await pool.query(query, params);
-  return rows as CurrentRecord[];
-}
-
-export async function getPowerFactorData(source?: string): Promise<PowerFactorRecord[]> {
-  const query = source 
-    ? `SELECT pf1, pf2, pf3, pft, time 
-       FROM power_source_data 
-       WHERE source_type = ? 
-       AND time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`
-    : `SELECT pf1, pf2, pf3, pft, time 
-       FROM power_source_data 
-       WHERE time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`;
-
-  const params = source ? [source] : [];
-  const [rows] = await pool.query(query, params);
-  return rows as PowerFactorRecord[];
-}
-
-export async function getFrequencyData(source?: string): Promise<FrequencyRecord[]> {
-  const query = source 
-    ? `SELECT hz, time 
-       FROM power_source_data 
-       WHERE source_type = ? 
-       AND time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`
-    : `SELECT hz, time 
-       FROM power_source_data 
-       WHERE time >= NOW() - INTERVAL '1' HOUR
-       ORDER BY time ASC`;
-
-  const params = source ? [source] : [];
-  const [rows] = await pool.query(query, params);
-  return rows as FrequencyRecord[];
 }

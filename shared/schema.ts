@@ -9,34 +9,9 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
-// Weather data table
-export const weatherData = pgTable("weather_data", {
+// Base power source schema factory
+const createPowerSourceTable = (tableName: string) => pgTable(tableName, {
   id: serial("id").primaryKey(),
-  location: text("location").notNull(),
-  temperature: decimal("temperature").notNull(),
-  condition: text("condition").notNull(),
-  humidity: decimal("humidity").notNull(),
-  wind: decimal("wind").notNull(),
-  uvIndex: decimal("uv_index").notNull(),
-  visibility: decimal("visibility").notNull(),
-  solarIntensity: text("solar_intensity").notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-// KPI data table
-export const kpis = pgTable("kpis", {
-  id: serial("id").primaryKey(),
-  title: text("title").notNull(),
-  value: text("value").notNull(),
-  change: decimal("change").notNull(),
-  type: text("type").notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-});
-
-// Power source data table
-export const powerSourceData = pgTable("power_source_data", {
-  id: serial("id").primaryKey(),
-  source_type: text("source_type").notNull(), // 'grid', 'generator', 'inverter'
   v1: decimal("v1").notNull(),
   v2: decimal("v2").notNull(),
   v3: decimal("v3").notNull(),
@@ -69,6 +44,39 @@ export const powerSourceData = pgTable("power_source_data", {
   kvarh_export: decimal("kvarh_export").notNull(),
   time: timestamp("time").defaultNow().notNull(),
 });
+
+// Create tables for each source
+export const grid1 = createPowerSourceTable("grid1");
+export const grid2 = createPowerSourceTable("grid2");
+export const generator1 = createPowerSourceTable("generator1");
+export const generator2 = createPowerSourceTable("generator2");
+export const inverter1 = createPowerSourceTable("inverter1");
+export const inverter2 = createPowerSourceTable("inverter2");
+
+// Weather data table
+export const weatherData = pgTable("weather_data", {
+  id: serial("id").primaryKey(),
+  location: text("location").notNull(),
+  temperature: decimal("temperature").notNull(),
+  condition: text("condition").notNull(),
+  humidity: decimal("humidity").notNull(),
+  wind: decimal("wind").notNull(),
+  uvIndex: decimal("uv_index").notNull(),
+  visibility: decimal("visibility").notNull(),
+  solarIntensity: text("solar_intensity").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+// KPI data table
+export const kpis = pgTable("kpis", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  value: text("value").notNull(),
+  change: decimal("change").notNull(),
+  type: text("type").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
 
 // System components
 export const systemComponents = pgTable("system_components", {
@@ -121,6 +129,14 @@ export const forecastDays = pgTable("forecast_days", {
   comparison: decimal("comparison").notNull(),
 });
 
+// Create insert schemas for each table
+export const insertGrid1Schema = createInsertSchema(grid1).omit({ id: true, time: true });
+export const insertGrid2Schema = createInsertSchema(grid2).omit({ id: true, time: true });
+export const insertGenerator1Schema = createInsertSchema(generator1).omit({ id: true, time: true });
+export const insertGenerator2Schema = createInsertSchema(generator2).omit({ id: true, time: true });
+export const insertInverter1Schema = createInsertSchema(inverter1).omit({ id: true, time: true });
+export const insertInverter2Schema = createInsertSchema(inverter2).omit({ id: true, time: true });
+
 // Schemas for data insertion
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -137,10 +153,6 @@ export const insertKpiSchema = createInsertSchema(kpis).omit({
   timestamp: true,
 });
 
-export const insertPowerSourceDataSchema = createInsertSchema(powerSourceData).omit({
-  id: true,
-  time: true,
-});
 
 export const insertSystemComponentSchema = createInsertSchema(systemComponents).omit({
   id: true,
@@ -164,6 +176,14 @@ export const insertForecastDaySchema = createInsertSchema(forecastDays).omit({
   id: true,
 });
 
+// Export types for each table
+export type Grid1Data = typeof grid1.$inferSelect;
+export type Grid2Data = typeof grid2.$inferSelect;
+export type Generator1Data = typeof generator1.$inferSelect;
+export type Generator2Data = typeof generator2.$inferSelect;
+export type Inverter1Data = typeof inverter1.$inferSelect;
+export type Inverter2Data = typeof inverter2.$inferSelect;
+
 // Type exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -174,8 +194,6 @@ export type Weather = typeof weatherData.$inferSelect;
 export type InsertKpi = z.infer<typeof insertKpiSchema>;
 export type Kpi = typeof kpis.$inferSelect;
 
-export type InsertPowerSourceData = z.infer<typeof insertPowerSourceDataSchema>;
-export type PowerSourceData = typeof powerSourceData.$inferSelect;
 
 export type InsertSystemComponent = z.infer<typeof insertSystemComponentSchema>;
 export type SystemComponent = typeof systemComponents.$inferSelect;
