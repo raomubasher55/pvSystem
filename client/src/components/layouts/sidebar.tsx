@@ -128,9 +128,9 @@ export default function Sidebar() {
               {expandedSections.powerSources && (
                 <ul className="mt-1 ml-8 space-y-1">
                   <li>
-                    <Link href="/source-monitor?source=inverter1">
+                    <Link href="/sources/inverter1">
                       <a className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                        location.includes('/source-monitor') && location.includes('inverter1')
+                        location.includes('/sources/inverter1')
                           ? "bg-primary-50 dark:bg-slate-700 text-primary-600 dark:text-primary-400 font-medium" 
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                       }`}>
@@ -140,9 +140,9 @@ export default function Sidebar() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/source-monitor?source=inverter2">
+                    <Link href="/sources/inverter2">
                       <a className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                        location.includes('/source-monitor') && location.includes('inverter2')
+                        location.includes('/sources/inverter2')
                           ? "bg-primary-50 dark:bg-slate-700 text-primary-600 dark:text-primary-400 font-medium" 
                           : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700"
                       }`}>

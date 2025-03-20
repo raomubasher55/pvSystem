@@ -24,7 +24,7 @@ import DashboardHeader from '@/components/layouts/dashboard-header';
 import { Battery, Activity, BatteryCharging, Sun, Zap } from 'lucide-react';
 
 export const SourceMonitor = () => {
-  const [, params] = useLocation();
+  const [location, params] = useLocation();
   const [timeRange, setTimeRange] = useState('last-24h');
   const [customDateRange, setCustomDateRange] = useState<{
     startDate: string;
@@ -32,8 +32,9 @@ export const SourceMonitor = () => {
   } | null>(null);
   const queryClient = useQueryClient();
   
-  // Get source type from URL query parameters or default to inverter1
-  const sourceType = new URLSearchParams(window.location.search).get('source') || 'inverter1';
+  // Get source type from route parameters or query parameters or default to inverter1
+  const sourceId = params?.sourceId;
+  const sourceType = sourceId || new URLSearchParams(window.location.search).get('source') || 'inverter1';
   
   // Format display name
   const getDisplayName = (source: string) => {
@@ -121,8 +122,16 @@ export const SourceMonitor = () => {
   const getSourceParameters = () => {
     if (sourceType.includes('inverter')) {
       return [
-        { label: 'DC Voltage', value: '320 V' },
-        { label: 'AC Voltage', value: '230 V' },
+        { label: 'Line-Line Voltage', value: '230/400 V' },
+        { label: 'Current Phase A', value: '8.7 A' },
+        { label: 'Current Phase B', value: '8.5 A' },
+        { label: 'Current Phase C', value: '8.9 A' },
+        { label: 'L-L Voltage Range', value: '390-410 V' },
+        { label: 'Active Power', value: '3.8 kW' },
+        { label: 'Reactive Power', value: '1.2 kVAR' },
+        { label: 'Power Factor', value: '0.95' },
+        { label: 'Frequency', value: '50 Hz' },
+        { label: 'DC Input Voltage', value: '320 V' },
         { label: 'Battery SOC', value: '78%' },
         { label: 'Battery Temperature', value: '34°C' },
         { label: 'PV Input Power', value: '4.5 kW' },

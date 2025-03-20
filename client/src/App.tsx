@@ -20,6 +20,7 @@ function Router() {
       <Route path="/generator" component={Generator} />
       <Route path="/weather" component={Weather} />
       <Route path="/source-monitor" component={SourceMonitor} />
+      <Route path="/sources/:sourceId" component={SourceMonitor} />
       <Route component={NotFound} />
     </Switch>
   );
