@@ -16,7 +16,7 @@ export const storage = {
 
   async getKpis() {
     const powerData = await db.getAllSourcesLatestData();
-    const totalPower = powerData.reduce((sum, data) => sum + data.kwt, 0);
+    const totalPower = powerData.reduce((sum, data) => sum + Number(data.kwt), 0);
     
     return [
       { id: 'kpi1', title: 'Current Power', value: `${totalPower.toFixed(2)} kW`, change: 2.5 },
@@ -31,58 +31,77 @@ export const storage = {
     return powerData.map((data, index) => ({
       id: `sc${index + 1}`,
       name: `${data.source_type.charAt(0).toUpperCase() + data.source_type.slice(1)} #${index + 1}`,
-      details: `${data.kwt.toFixed(2)} kW`,
-      status: data.kwt > 0 ? 'Online' : 'Offline',
+      details: `${Number(data.kwt).toFixed(2)} kW`,
+      status: Number(data.kwt) > 0 ? 'Online' : 'Offline',
       lastChecked: data.time
     }));
   },
 
   async getGeneratorGroups() {
-    const generatorData = await db.getLatestPowerData('generator1');
+    const generator1Data = await db.getLatestPowerData('generator1');
+    const generator2Data = await db.getLatestPowerData('generator2');
     
     return [{
       id: 'gg1',
-      name: 'Roof Array',
-      generators: [{
-        id: 'g1',
-        name: 'Generator 1',
-        output: `${generatorData.kwt.toFixed(1)} kW`,
-        status: generatorData.kwt > 0 ? 'Running' : 'Stopped'
-      }]
+      name: 'Generator Array',
+      generators: [
+        {
+          id: 'g1',
+          name: 'Generator 1',
+          output: `${Number(generator1Data.kwt).toFixed(1)} kW`,
+          status: Number(generator1Data.kwt) > 0 ? 'Running' : 'Stopped'
+        },
+        {
+          id: 'g2',
+          name: 'Generator 2', 
+          output: `${Number(generator2Data.kwt).toFixed(1)} kW`,
+          status: Number(generator2Data.kwt) > 0 ? 'Running' : 'Stopped'
+        }
+      ]
     }];
   },
 
   async getGeneratorTotalOutput() {
-    const generatorData = await db.getLatestPowerData('generator1');
-    return `${generatorData.kwt.toFixed(1)} kW`;
+    const [generator1Data, generator2Data] = await Promise.all([
+      db.getLatestPowerData('generator1'),
+      db.getLatestPowerData('generator2')
+    ]);
+    const total = Number(generator1Data.kwt) + Number(generator2Data.kwt);
+    return `${total.toFixed(1)} kW`;
   },
 
   async getGeneratorPerformanceHourly() {
-    return await db.getHistoricalPowerData('generator1', 24);
+    const data = await db.getHistoricalPowerData('generator1', 24);
+    return data.map(record => ({
+      time: new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric' }),
+      value: Number(record.total_power)
+    }));
   },
 
   async getGeneratorTemperature() {
-    return { current: 42, max: 80, min: 20 }; // Static data as temperature not in DB
+    // This would require additional sensors - using static data for now
+    return { current: 42, max: 80, min: 20 };
   },
 
   async getGridStatus() {
     const gridData = await db.getLatestPowerData('grid1');
     return { 
-      status: gridData.kwt > 0 ? "Connected" : "Disconnected", 
+      status: Number(gridData.kwt) > 0 ? "Connected" : "Disconnected", 
       lastChecked: gridData.time 
     };
   },
 
   async getGridVoltage() {
-    return await db.getVoltageData('grid1');
-  },
-
-  async getGridFrequency() {
-    return await db.getFrequencyData('grid1');
+    const data = await db.getVoltageData('grid1');
+    return data.map(record => ({
+      time: new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric' }),
+      v1: Number(record.v1),
+      v2: Number(record.v2),
+      v3: Number(record.v3)
+    }));
   },
 
   async getAlerts() {
-    // Query alerts from database
     const { db: drizzleDb } = await import('./db');
     const { alerts } = await import('@shared/schema');
     const dbAlerts = await drizzleDb.select().from(alerts).orderBy(alerts.timestamp);
@@ -90,7 +109,6 @@ export const storage = {
   },
 
   async getForecastDays() {
-    // Query forecast days from database
     const { db: drizzleDb } = await import('./db');
     const { forecastDays } = await import('@shared/schema');
     const dbForecastDays = await drizzleDb.select().from(forecastDays);
@@ -98,10 +116,10 @@ export const storage = {
   },
 
   async getWeeklyForecast() {
-    const historyData = await db.getHistoricalPowerData('generator1', 168); // Last 7 days
-    const weeklyTotal = historyData.reduce((sum, data) => sum + data.total_power, 0);
-    const prevWeekData = await db.getHistoricalPowerData('generator1', 336); // Previous 7 days
-    const prevWeekTotal = prevWeekData.slice(0, 168).reduce((sum, data) => sum + data.total_power, 0);
+    const historyData = await db.getHistoricalPowerData('generator1', 168);
+    const weeklyTotal = historyData.reduce((sum, data) => sum + Number(data.total_power), 0);
+    const prevWeekData = await db.getHistoricalPowerData('generator1', 336);
+    const prevWeekTotal = prevWeekData.slice(0, 168).reduce((sum, data) => sum + Number(data.total_power), 0);
     const weeklyChange = ((weeklyTotal - prevWeekTotal) / prevWeekTotal) * 100;
     
     return {
@@ -111,20 +129,20 @@ export const storage = {
   },
 
   async getEnergyHistoryDaily() {
-    const historyData = await db.getHistoricalPowerData('generator1', 168); // Last 7 days
+    const data = await db.getHistoricalPowerData('generator1', 168);
     
-    const dailyData = historyData.reduce((acc: any[], data) => {
-      const date = new Date(data.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dailyData = data.reduce((acc: any[], record) => {
+      const date = new Date(record.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const existingDay = acc.find(d => d.date === date);
       
       if (existingDay) {
-        existingDay.production += data.total_power;
-        existingDay.consumption += data.kwh_import;
+        existingDay.production += Number(record.total_power);
+        existingDay.consumption += Number(record.kwh_import);
       } else {
         acc.push({
           date,
-          production: data.total_power,
-          consumption: data.kwh_import
+          production: Number(record.total_power),
+          consumption: Number(record.kwh_import)
         });
       }
       
@@ -135,31 +153,14 @@ export const storage = {
   },
 
   async getEnergyHistoryMonthly() {
-    return await db.getHistoricalPowerData('generator1', 720); // Last 30 days
+    return await db.getHistoricalPowerData('generator1', 720);
   },
 
   async getEnergyHistoryYearly() {
-    return await db.getHistoricalPowerData('generator1', 8760); // Last 365 days
+    return await db.getHistoricalPowerData('generator1', 8760);
   },
 
   async getEnergyDistribution() {
     return await db.getPowerSourceDistribution();
-  },
-
-  async getWeatherForecast() {
-    // Static weather forecast as it's not in DB
-    return [
-      { time: "Now", temp: 25, condition: "Sunny" },
-      { time: "1PM", temp: 27, condition: "Partly Cloudy" },
-      { time: "2PM", temp: 26, condition: "Cloudy" }
-    ];
-  },
-
-  async getSolarRadiation() {
-    const inverterData = await db.getHistoricalPowerData('inverter1', 3);
-    return inverterData.map(data => ({
-      time: new Date(data.time).toLocaleTimeString('en-US', { hour: 'numeric' }),
-      value: data.total_power * 100 // Convert kW to W/m²
-    }));
   }
 };
