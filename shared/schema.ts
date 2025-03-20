@@ -1,10 +1,10 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb, decimal } from "drizzle-orm/pg-core";
+import { mysqlTable, varchar, int, datetime, decimal } from "drizzle-orm/mysql-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Base power source schema factory
-const createPowerSourceTable = (tableName: string) => pgTable(tableName, {
-  id: serial("id").primaryKey(),
+const createPowerSourceTable = (tableName: string) => mysqlTable(tableName, {
+  id: int("id").primaryKey().autoincrement(),
   v1: decimal("v1", { precision: 10, scale: 2 }).notNull(),
   v2: decimal("v2", { precision: 10, scale: 2 }).notNull(),
   v3: decimal("v3", { precision: 10, scale: 2 }).notNull(),
@@ -35,7 +35,7 @@ const createPowerSourceTable = (tableName: string) => pgTable(tableName, {
   kwh_export: decimal("kwh_export", { precision: 10, scale: 2 }).notNull(),
   kvarh_import: decimal("kvarh_import", { precision: 10, scale: 2 }).notNull(),
   kvarh_export: decimal("kvarh_export", { precision: 10, scale: 2 }).notNull(),
-  time: timestamp("time").defaultNow().notNull(),
+  time: datetime("time").default(new Date()).notNull(),
 });
 
 // Create tables for each source
@@ -49,21 +49,21 @@ export const inverter2 = createPowerSourceTable("inverter2");
 // Tables for grid, generator, and inverter power sources
 
 // System alerts
-export const alerts = pgTable("alerts", {
-  id: serial("id").primaryKey(),
-  status: text("status").notNull(),
-  description: text("description").notNull(),
-  component: text("component").notNull(),
-  time: text("time").notNull(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
+export const alerts = mysqlTable("alerts", {
+  id: int("id").primaryKey().autoincrement(),
+  status: varchar("status", { length: 50 }).notNull(),
+  description: varchar("description", { length: 255 }).notNull(),
+  component: varchar("component", { length: 100 }).notNull(),
+  time: varchar("time", { length: 50 }).notNull(),
+  timestamp: datetime("timestamp").default(new Date()).notNull(),
 });
 
 // Energy forecast
-export const forecastDays = pgTable("forecast_days", {
-  id: serial("id").primaryKey(),
-  date: text("date").notNull(),
-  weather: text("weather").notNull(),
-  forecast: text("forecast").notNull(),
+export const forecastDays = mysqlTable("forecast_days", {
+  id: int("id").primaryKey().autoincrement(),
+  date: varchar("date", { length: 50 }).notNull(),
+  weather: varchar("weather", { length: 50 }).notNull(),
+  forecast: varchar("forecast", { length: 255 }).notNull(),
   comparison: decimal("comparison", { precision: 10, scale: 2 }).notNull(),
 });
 
