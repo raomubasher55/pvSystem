@@ -143,28 +143,37 @@ export default function EnergyChart() {
                   labelFormatter={formatTime}
                 />
                 <Area 
-                  type="monotone" 
+                  type="linear" 
                   dataKey="production" 
                   stroke="#3b82f6" 
                   fillOpacity={1} 
                   fill="url(#colorProduction)" 
                   strokeWidth={2}
+                  dot={{ r: 2 }}
+                  activeDot={{ r: 4 }}
+                  isAnimationActive={false}
                 />
                 <Area 
-                  type="monotone" 
+                  type="linear" 
                   dataKey="consumption" 
                   stroke="#10b981" 
                   fillOpacity={1} 
                   fill="url(#colorConsumption)" 
                   strokeWidth={2}
+                  dot={{ r: 2 }}
+                  activeDot={{ r: 4 }}
+                  isAnimationActive={false}
                 />
                 <Area 
-                  type="monotone" 
+                  type="linear" 
                   dataKey="grid" 
                   stroke="#f59e0b" 
                   fillOpacity={1} 
                   fill="url(#colorGrid)" 
                   strokeWidth={2}
+                  dot={{ r: 2 }}
+                  activeDot={{ r: 4 }}
+                  isAnimationActive={false}
                 />
               </AreaChart>
             </ResponsiveContainer>
