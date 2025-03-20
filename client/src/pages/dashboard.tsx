@@ -17,15 +17,15 @@ export default function Dashboard() {
 
   const handleRefresh = () => {
     // Invalidate and refetch relevant dashboard queries
-    queryClient.invalidateQueries(['/api/energy/chart']);
-    queryClient.invalidateQueries(['/api/system/status']);
-    queryClient.invalidateQueries(['/api/generator/performance']);
-    queryClient.invalidateQueries(['/api/energy/distribution']);
-    queryClient.invalidateQueries(['/api/grid/status']);
-    queryClient.invalidateQueries(['/api/alerts']);
-    queryClient.invalidateQueries(['/api/energy/forecast']);
-    queryClient.invalidateQueries(['/api/weather']);
-    queryClient.invalidateQueries(['/api/kpis']);
+    queryClient.invalidateQueries({ queryKey: ['/api/energy/chart'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/system/status'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/generator/performance'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/energy/distribution'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/grid/status'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/alerts'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/energy/forecast'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/weather'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/kpis'] });
   };
 
   const handleTimeRangeChange = (newTimeRange: string) => {
@@ -51,8 +51,8 @@ export default function Dashboard() {
       <EnergyChart timeRange={timeRange} />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <SystemStatus />
-        <GeneratorPerformance />
+        <SystemStatus timeRange={timeRange} />
+        <GeneratorPerformance timeRange={timeRange} />
         <PowerSourceDistribution />
       </div>
       

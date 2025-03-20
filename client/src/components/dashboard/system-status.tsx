@@ -4,9 +4,18 @@ import { PanelTop, Cpu, Battery, Plug } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function SystemStatus() {
+interface SystemStatusProps {
+  timeRange?: string;
+}
+
+export default function SystemStatus({ timeRange = 'last-24h' }: SystemStatusProps) {
   const { data, isLoading } = useQuery<SystemComponent[]>({
-    queryKey: ['/api/system/status'],
+    queryKey: ['/api/system/status', timeRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/system/status?timeRange=${timeRange}`);
+      if (!res.ok) throw new Error('Failed to fetch system status');
+      return res.json();
+    }
   });
 
   const getIcon = (type: string) => {

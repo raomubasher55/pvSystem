@@ -5,12 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function GeneratorPerformance() {
+interface GeneratorPerformanceProps {
+  timeRange?: string;
+}
+
+export default function GeneratorPerformance({ timeRange = 'last-24h' }: GeneratorPerformanceProps) {
   const { data, isLoading } = useQuery<{
     groups: GeneratorGroup[],
     totalOutput: string
   }>({
-    queryKey: ['/api/generator/performance'],
+    queryKey: ['/api/generator/performance', timeRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/generator/performance?timeRange=${timeRange}`);
+      if (!res.ok) throw new Error('Failed to fetch generator performance');
+      return res.json();
+    }
   });
 
   const getProgressColor = (efficiency: number) => {
