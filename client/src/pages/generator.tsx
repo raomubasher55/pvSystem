@@ -1,6 +1,14 @@
+import React, { useState } from "react";
 import DashboardHeader from "@/components/layouts/dashboard-header";
 import GeneratorPerformance from "@/components/dashboard/generator-performance";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { 
   ResponsiveContainer, 
@@ -17,11 +25,18 @@ import {
 } from "recharts";
 
 export default function Generator() {
+  const [timeRange, setTimeRange] = useState('last-24h');
+  
   const { data: performanceData, isLoading: isPerformanceLoading } = useQuery<any[]>({
-    queryKey: ['/api/generator/performance/hourly'],
+    queryKey: ['/api/generator/performance/hourly', timeRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/generator/performance/hourly?timeRange=${timeRange}`);
+      if (!res.ok) throw new Error('Failed to fetch generator performance data');
+      return res.json();
+    }
   });
 
-  const { data: temperatureData, isLoading: isTemperatureLoading } = useQuery<any[]>({
+  const { data: temperatureData, isLoading: isTemperatureLoading } = useQuery<{current: number, max: number, min: number}>({
     queryKey: ['/api/generator/temperature'],
   });
 
@@ -79,9 +94,27 @@ export default function Generator() {
       </div>
       
       <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Performance Over Time</CardTitle>
-          <CardDescription>Generator output over the past 24 hours</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <div>
+            <CardTitle>Performance Over Time</CardTitle>
+            <CardDescription>Generator output by time period</CardDescription>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Select 
+              value={timeRange} 
+              onValueChange={(value) => setTimeRange(value)}
+            >
+              <SelectTrigger className="w-[150px] h-8 text-sm">
+                <SelectValue placeholder="Select timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="last-24h">Last 24 hours</SelectItem>
+                <SelectItem value="last-7d">Last 7 days</SelectItem>
+                <SelectItem value="last-30d">Last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="h-80">
@@ -97,14 +130,29 @@ export default function Generator() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={performanceData}>
                   <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
+                  <XAxis 
+                    dataKey="time" 
+                    tick={{ fontSize: 12 }}
+                    interval="preserveStartEnd"
+                    minTickGap={30}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12 }}
+                    width={40}
+                    label={{ value: 'kW', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip formatter={(value) => [`${value} kW`, 'Output']} />
                   <Legend />
-                  <Line type="monotone" dataKey="roofEast" name="Roof East" stroke="#3b82f6" />
-                  <Line type="monotone" dataKey="roofWest" name="Roof West" stroke="#10b981" />
-                  <Line type="monotone" dataKey="garage" name="Garage" stroke="#f59e0b" />
-                  <Line type="monotone" dataKey="groundArray" name="Ground Array" stroke="#8b5cf6" />
+                  <Line 
+                    type="linear" 
+                    dataKey="value" 
+                    name="Generator Output" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ r: 2 }}
+                    activeDot={{ r: 4 }}
+                    isAnimationActive={false}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -128,20 +176,32 @@ export default function Generator() {
                 <p className="text-gray-500 dark:text-gray-400">No temperature data available</p>
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={temperatureData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                  <XAxis dataKey="time" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="roofEast" name="Roof East" stroke="#3b82f6" />
-                  <Line type="monotone" dataKey="roofWest" name="Roof West" stroke="#10b981" />
-                  <Line type="monotone" dataKey="garage" name="Garage" stroke="#f59e0b" />
-                  <Line type="monotone" dataKey="groundArray" name="Ground Array" stroke="#8b5cf6" />
-                  <Line type="monotone" dataKey="ambient" name="Ambient Temp" stroke="#a3a3a3" strokeDasharray="5 5" />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-semibold mb-1">Current Temperature</h3>
+                  <div className="text-5xl font-bold text-blue-600 dark:text-blue-400">
+                    {temperatureData.current}°C
+                  </div>
+                  <div className="text-gray-500 mt-2">
+                    Min: {temperatureData.min}°C | Max: {temperatureData.max}°C
+                  </div>
+                </div>
+                
+                <div className="w-full max-w-md h-8 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-red-500"
+                    style={{ 
+                      width: `${Math.max(0, Math.min(100, ((temperatureData.current - temperatureData.min) / (temperatureData.max - temperatureData.min)) * 100))}%` 
+                    }}
+                  />
+                </div>
+                
+                <div className="w-full max-w-md flex justify-between mt-2 text-sm text-gray-500">
+                  <span>{temperatureData.min}°C</span>
+                  <span>Optimal Range</span>
+                  <span>{temperatureData.max}°C</span>
+                </div>
+              </div>
             )}
           </div>
         </CardContent>

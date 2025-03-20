@@ -184,13 +184,25 @@ export const storage = {
     }
   },
 
-  async getGeneratorPerformanceHourly() {
+  async getGeneratorPerformanceHourly(timeRange = 'last-24h') {
     try {
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+      // Determine time range for historical data
+      const startDate = new Date();
+      switch (timeRange) {
+        case 'last-7d':
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'last-30d':
+          startDate.setDate(startDate.getDate() - 30);
+          break;
+        case 'last-24h':
+        default:
+          startDate.setHours(startDate.getHours() - 24);
+          break;
+      }
       
       const generator1Data = await db.select().from(schema.generator1)
-        .where(gte(schema.generator1.time, twentyFourHoursAgo))
+        .where(gte(schema.generator1.time, startDate))
         .orderBy(schema.generator1.time);
       
       // Group by hour and calculate average power
@@ -222,17 +234,100 @@ export const storage = {
     return { current: 42, max: 80, min: 20 };
   },
 
-  async getGridStatus() {
+  async getGridStatus(timeRange = 'last-24h') {
     try {
+      // Get the latest grid data for status
       const [grid1Data] = await db.select().from(schema.grid1).orderBy(desc(schema.grid1.time)).limit(1);
       
       if (!grid1Data) {
         throw new Error('No grid data available');
       }
       
+      // Determine time range for historical data
+      const startDate = new Date();
+      switch (timeRange) {
+        case 'last-7d':
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'last-30d':
+          startDate.setDate(startDate.getDate() - 30);
+          break;
+        case 'last-24h':
+        default:
+          startDate.setHours(startDate.getHours() - 24);
+          break;
+      }
+      
+      // Get historical data for chart
+      const historicalData = await db.select().from(schema.grid1)
+        .where(gte(schema.grid1.time, startDate))
+        .orderBy(schema.grid1.time);
+      
+      // Calculate daily totals
+      const dailyImport = historicalData.reduce((sum, record) => sum + Number(record.kwh_import || 0), 0);
+      const dailyExport = historicalData.reduce((sum, record) => sum + Number(record.kwh_export || 0), 0);
+      const netBalance = dailyExport - dailyImport;
+      
+      // Format chart data
+      let chartData = [];
+      if (timeRange === 'last-24h') {
+        // Group by hour for 24h view
+        const hourlyData: Record<string, { import: number, export: number, count: number }> = {};
+        
+        historicalData.forEach(record => {
+          const hour = new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric' });
+          
+          if (!hourlyData[hour]) {
+            hourlyData[hour] = { import: 0, export: 0, count: 0 };
+          }
+          
+          hourlyData[hour].import += Number(record.kwh_import || 0);
+          hourlyData[hour].export += Number(record.kwh_export || 0);
+          hourlyData[hour].count += 1;
+        });
+        
+        chartData = Object.entries(hourlyData).map(([time, data]) => ({
+          time,
+          import: data.import,
+          export: data.export
+        }));
+      } else {
+        // Group by day for 7d or 30d view
+        const dailyData: Record<string, { import: number, export: number }> = {};
+        
+        historicalData.forEach(record => {
+          const day = new Date(record.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          
+          if (!dailyData[day]) {
+            dailyData[day] = { import: 0, export: 0 };
+          }
+          
+          dailyData[day].import += Number(record.kwh_import || 0);
+          dailyData[day].export += Number(record.kwh_export || 0);
+        });
+        
+        chartData = Object.entries(dailyData).map(([time, data]) => ({
+          time,
+          import: data.import,
+          export: data.export
+        }));
+      }
+      
+      // Calculate percentage changes (mock values for demonstration)
+      const importChange = 5.2;
+      const exportChange = 3.8;
+      
       return { 
         status: Number(grid1Data.kwt) > 0 ? "Connected" : "Disconnected", 
-        lastChecked: grid1Data.time.toISOString() 
+        lastChecked: grid1Data.time.toISOString(),
+        import: dailyImport.toFixed(2),
+        export: dailyExport.toFixed(2),
+        importChange,
+        exportChange,
+        netBalance: netBalance.toFixed(2),
+        voltage: (Number(grid1Data.v1) + Number(grid1Data.v2) + Number(grid1Data.v3)) / 3 + " V",
+        frequency: "50.1 Hz",
+        chartData
       };
     } catch (error) {
       console.error('Error fetching grid status:', error);
@@ -277,10 +372,22 @@ export const storage = {
     }
   },
   
-  async getEnergyChartData() {
+  async getEnergyChartData(timeRange = 'last-24h') {
     try {
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+      // Determine time range for historical data
+      const startDate = new Date();
+      switch (timeRange) {
+        case 'last-7d':
+          startDate.setDate(startDate.getDate() - 7);
+          break;
+        case 'last-30d':
+          startDate.setDate(startDate.getDate() - 30);
+          break;
+        case 'last-24h':
+        default:
+          startDate.setHours(startDate.getHours() - 24);
+          break;
+      }
       
       // Get grid and generator data from the last 24 hours
       const grid1Data = await db.select().from(schema.grid1)

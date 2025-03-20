@@ -14,10 +14,18 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
 export default function GridStatus() {
+  const [timeRange, setTimeRange] = useState('last-24h');
+  
   const { data, isLoading } = useQuery<GridData>({
-    queryKey: ['/api/grid/status'],
+    queryKey: ['/api/grid/status', timeRange],
+    queryFn: async () => {
+      const res = await fetch(`/api/grid/status?timeRange=${timeRange}`);
+      if (!res.ok) throw new Error('Failed to fetch grid status');
+      return res.json();
+    }
   });
 
   return (
@@ -33,7 +41,10 @@ export default function GridStatus() {
             <CheckCircle className="h-4 w-4" />
             Grid Stable
           </span>
-          <Select defaultValue="last-24h">
+          <Select 
+            value={timeRange} 
+            onValueChange={(value) => setTimeRange(value)}
+          >
             <SelectTrigger className="w-[150px] h-8 text-sm">
               <SelectValue placeholder="Select timeframe" />
             </SelectTrigger>

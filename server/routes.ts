@@ -100,7 +100,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/generator/performance/hourly", async (req, res) => {
     try {
-      const performanceData = await storage.getGeneratorPerformanceHourly();
+      const timeRange = req.query.timeRange as string || 'last-24h';
+      const performanceData = await storage.getGeneratorPerformanceHourly(timeRange);
       res.json(performanceData);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch hourly generator performance" });
@@ -119,7 +120,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Grid status endpoint
   app.get("/api/grid/status", async (req, res) => {
     try {
-      const gridStatus = await storage.getGridStatus();
+      const timeRange = req.query.timeRange as string || 'last-24h';
+      const gridStatus = await storage.getGridStatus(timeRange);
       res.json(gridStatus);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch grid status" });
