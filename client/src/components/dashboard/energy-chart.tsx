@@ -41,54 +41,20 @@ type EnergyDistribution = {
 // Remove mock data as we are using real data from API
 
 export default function EnergyChart() {
-  // Use the actual API response type
-  const { data: apiEnergyData, isLoading: isLoadingEnergy } = useQuery<ApiEnergyData[]>({
-    queryKey: ['/api/energy/daily'],
+  // Use the new energy chart data API endpoint
+  const { data: chartData, isLoading: isLoadingEnergy } = useQuery<ChartEnergyData[]>({
+    queryKey: ['/api/energy/chart'],
   });
 
+  // Distribution data for the pie chart
   const { data: distributionData, isLoading: isLoadingDistribution } = useQuery<EnergyDistribution[]>({
     queryKey: ['/api/energy/distribution'],
   });
 
-  // Transform API data to the format expected by the chart
+  // Use the chart data directly without transformation 
   const transformedEnergyData = useMemo(() => {
-    if (!apiEnergyData) return [];
-    
-    // Get a reduced dataset - one point per hour to make the chart more readable
-    // This is needed because you have over 8000 data points which is too many
-    const dataByHour = new Map<string, ChartEnergyData>();
-    
-    apiEnergyData.forEach(item => {
-      const date = new Date(item.time);
-      // Create key using hour only to reduce data points
-      const hourKey = `${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()} ${date.getHours()}:00`;
-      
-      // Initialize or update hourly data
-      if (!dataByHour.has(hourKey)) {
-        dataByHour.set(hourKey, {
-          time: hourKey,
-          production: item.total_power,  // Assuming total_power is production
-          consumption: item.kwh_import > 0 ? item.kwh_import / 1000 : 0,  // Convert to kWh
-          grid: item.kwh_export > 0 ? item.kwh_export / 1000 : 0  // Convert to kWh
-        });
-      } else {
-        // For simplicity, we'll just take the last value in each hour
-        // In a real app, you might want to average values
-        const existing = dataByHour.get(hourKey)!;
-        dataByHour.set(hourKey, {
-          ...existing,
-          production: item.total_power,
-          consumption: item.kwh_import > 0 ? item.kwh_import / 1000 : 0,
-          grid: item.kwh_export > 0 ? item.kwh_export / 1000 : 0
-        });
-      }
-    });
-    
-    // Convert map to array and take most recent 24 hours
-    return Array.from(dataByHour.values())
-      .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime())
-      .slice(-24);
-  }, [apiEnergyData]);
+    return chartData || [];
+  }, [chartData]);
 
   const COLORS = ['#3b82f6', '#10b981', '#f59e0b'];
 

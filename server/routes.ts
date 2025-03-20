@@ -56,6 +56,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch energy data" });
     }
   });
+  
+  // New endpoint for energy chart data with hourly time points
+  app.get("/api/energy/chart", async (req, res) => {
+    try {
+      const chartData = await storage.getEnergyChartData();
+      res.json(chartData);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch energy chart data" });
+    }
+  });
 
   app.get("/api/energy/distribution", async (req, res) => {
     try {
