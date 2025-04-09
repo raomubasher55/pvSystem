@@ -5,9 +5,9 @@ import * as schema from "@shared/schema";
 // MySQL connection configuration
 const connection = mysql.createPool({
   host: 'sql12.freesqldatabase.com',
-  user: 'sql12768689',
-  password: 'mUu4y7Yfk8',
-  database: 'sql12768689',
+  user: 'sql12772195',
+  password: 'RCzvNTxRsL',
+  database: 'sql12772195',
   port: 3306,
   connectionLimit: 10
 });
