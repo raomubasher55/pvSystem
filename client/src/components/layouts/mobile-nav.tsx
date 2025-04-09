@@ -12,39 +12,30 @@ export default function MobileNav() {
   
   const isActive = (path: string) => location === path;
   
+  // Define the navigation items
+  const navItems = [
+    { path: "/", icon: <GaugeCircle className="h-5 w-5" />, label: "Dashboard" },
+    { path: "/energy-history", icon: <BarChart3 className="h-5 w-5" />, label: "History" },
+    { path: "/grid-monitoring", icon: <Plug className="h-5 w-5" />, label: "Grid" },
+    { path: "/generator", icon: <PanelTop className="h-5 w-5" />, label: "Generator" },
+    { path: "/weather", icon: <CloudSun className="h-5 w-5" />, label: "Weather" }
+  ];
+  
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 py-2 lg:hidden z-10">
       <div className="grid grid-cols-5 gap-1">
-        <Link href="/">
-          <a className={`flex flex-col items-center py-1 ${isActive("/") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>
-            <GaugeCircle className="h-5 w-5" />
-            <span className="text-xs mt-1">Dashboard</span>
-          </a>
-        </Link>
-        <Link href="/energy-history">
-          <a className={`flex flex-col items-center py-1 ${isActive("/energy-history") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>
-            <BarChart3 className="h-5 w-5" />
-            <span className="text-xs mt-1">History</span>
-          </a>
-        </Link>
-        <Link href="/grid-monitoring">
-          <a className={`flex flex-col items-center py-1 ${isActive("/grid-monitoring") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>
-            <Plug className="h-5 w-5" />
-            <span className="text-xs mt-1">Grid</span>
-          </a>
-        </Link>
-        <Link href="/generator">
-          <a className={`flex flex-col items-center py-1 ${isActive("/generator") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>
-            <PanelTop className="h-5 w-5" />
-            <span className="text-xs mt-1">Generator</span>
-          </a>
-        </Link>
-        <Link href="/weather">
-          <a className={`flex flex-col items-center py-1 ${isActive("/weather") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>
-            <CloudSun className="h-5 w-5" />
-            <span className="text-xs mt-1">Weather</span>
-          </a>
-        </Link>
+        {navItems.map((item) => (
+          <Link key={item.path} href={item.path}>
+            <div className={`flex flex-col items-center justify-center py-1 cursor-pointer ${
+              isActive(item.path) 
+                ? "text-blue-600 dark:text-blue-400" 
+                : "text-gray-500 dark:text-gray-400"
+            }`}>
+              {item.icon}
+              <span className="text-xs mt-1">{item.label}</span>
+            </div>
+          </Link>
+        ))}
       </div>
     </div>
   );

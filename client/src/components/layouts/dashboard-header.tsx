@@ -63,57 +63,63 @@ export default function DashboardHeader({
         <p className="text-sm text-gray-500 dark:text-gray-400">{description}</p>
       </div>
       
-      <div className="flex items-center gap-2">
-        <Select 
-          value={timeRange} 
-          onValueChange={(value) => onTimeRangeChange && onTimeRangeChange(value)}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select timeframe" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="last-24h">Last 24 hours</SelectItem>
-            <SelectItem value="last-7d">Last 7 days</SelectItem>
-            <SelectItem value="last-30d">Last 30 days</SelectItem>
-            <SelectItem value="custom">Custom range</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full sm:w-auto mb-2 sm:mb-0">
+          <Select 
+            value={timeRange} 
+            onValueChange={(value) => onTimeRangeChange && onTimeRangeChange(value)}
+          >
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder="Select timeframe" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="last-24h">Last 24 hours</SelectItem>
+              <SelectItem value="last-7d">Last 7 days</SelectItem>
+              <SelectItem value="last-30d">Last 30 days</SelectItem>
+              <SelectItem value="custom">Custom range</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {timeRange === "custom" && (
-          <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className={cn(
-                  "w-[180px] justify-start text-left font-normal",
-                  !date && "text-muted-foreground"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? format(date, "PPP") : <span>Pick a date</span>}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={date}
-                onSelect={handleDateSelect}
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+          <div className="w-full sm:w-auto mb-2 sm:mb-0">
+            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full sm:w-[180px] justify-start text-left font-normal",
+                    !date && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {date ? format(date, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 z-50">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={handleDateSelect}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         )}
         
-        <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing}>
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-        </Button>
-        
-        {showExport && (
-          <Button onClick={onExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
+        <div className="flex gap-2 ml-auto">
+          <Button variant="outline" size="icon" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           </Button>
-        )}
+          
+          {showExport && (
+            <Button onClick={onExport} className="whitespace-nowrap">
+              <Download className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

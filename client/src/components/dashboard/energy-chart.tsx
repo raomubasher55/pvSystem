@@ -95,19 +95,19 @@ export default function EnergyChart({ timeRange: externalTimeRange }: EnergyChar
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
       <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-5">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
           <div>
             <h3 className="text-lg font-semibold">Energy Production</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">Daily power generation</p>
           </div>
           
-          <div className="flex items-center gap-3">
-            <div className="flex items-center mr-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center mr-4 order-first w-full md:w-auto md:order-none">
               <Select 
                 value={timeRange.startsWith('custom:') ? 'custom' : timeRange} 
                 onValueChange={(value) => setLocalTimeRange(value)}
               >
-                <SelectTrigger className="w-[150px] h-8 text-sm">
+                <SelectTrigger className="w-full md:w-[150px] h-9 text-sm">
                   <SelectValue placeholder="Select timeframe" />
                 </SelectTrigger>
                 <SelectContent>
@@ -118,17 +118,19 @@ export default function EnergyChart({ timeRange: externalTimeRange }: EnergyChar
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-blue-500"></span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Production</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-green-500"></span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Consumption</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-              <span className="text-sm text-gray-500 dark:text-gray-400">Grid</span>
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mt-2 md:mt-0">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Production</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Consumption</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">Grid</span>
+              </div>
             </div>
           </div>
         </div>
