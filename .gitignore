@@ -1,0 +1,41 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs/
+*.log
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# dotenv environment variables
+.env
+.env.*  # optional: catch .env.production, .env.local, etc.
+
+# PM2
+.pids
+*.pm2
+.pm2/
+
+# Build directories
+dist/
+build/
+
+# VSCode / IDEs
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# SSL/Certbot (though these shouldn't be in your repo anyway)
+etc/letsencrypt/
+certbot/
+
+# Nginx (only if you have temp or system-wide configs — adjust carefully)
+*.conf
