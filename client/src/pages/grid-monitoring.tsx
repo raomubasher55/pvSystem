@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+  import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -40,6 +40,7 @@ const GridMonitoring = () => {
     }
   });
 
+
   // Fetch grid voltage data
   const { data: voltageData, isLoading: isVoltageLoading } = useQuery({
     queryKey: ['/api/grid/voltage', effectiveTimeRange],
@@ -80,6 +81,9 @@ const GridMonitoring = () => {
       endDate: formattedEndDate
     });
   };
+
+
+  console.log(gridData)
 
   return (
     <div className="p-4 md:p-6">
@@ -140,9 +144,10 @@ const GridMonitoring = () => {
                 <div className="text-center">
                   <p className="text-gray-500">Power Import</p>
                   <h3 className="text-xl font-bold">{gridData?.import || "0.0 kW"}</h3>
-                  <p className={`text-xs ${gridData?.importChange > 0 ? "text-green-500" : "text-red-500"} mt-1`}>
+                  
+                  {/* <p className={`text-xs ${gridData?.importChange > 0 ? "text-green-500" : "text-red-500"} mt-1`}>
                     {gridData?.importChange > 0 ? "+" : ""}{gridData?.importChange || 0}% vs previous
-                  </p>
+                  </p> */}
                 </div>
               </CardContent>
             </Card>
@@ -151,9 +156,9 @@ const GridMonitoring = () => {
                 <div className="text-center">
                   <p className="text-gray-500">Power Export</p>
                   <h3 className="text-xl font-bold">{gridData?.export || "0.0 kW"}</h3>
-                  <p className={`text-xs ${gridData?.exportChange > 0 ? "text-green-500" : "text-red-500"} mt-1`}>
+                  {/* <p className={`text-xs ${gridData?.exportChange > 0 ? "text-green-500" : "text-red-500"} mt-1`}>
                     {gridData?.exportChange > 0 ? "+" : ""}{gridData?.exportChange || 0}% vs previous
-                  </p>
+                  </p> */}
                 </div>
               </CardContent>
             </Card>
@@ -183,6 +188,33 @@ const GridMonitoring = () => {
             <div className="text-center">
               <p className="text-gray-500">Line Frequency</p>
               <h3 className="text-xl font-bold">{gridData?.frequency || "50 Hz"}</h3>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-500">Total Power</p>
+              <h3 className="text-xl font-bold">{gridData?.power || "N/A"}</h3>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-500">Power Factor</p>
+              <h3 className="text-xl font-bold">{gridData?.powerFactor || "230 V"}</h3>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-gray-500">Total Energy</p>
+              <h3 className="text-xl font-bold">{gridData?.energy || "50 Hz"}</h3>
             </div>
           </CardContent>
         </Card>
@@ -270,6 +302,89 @@ const GridMonitoring = () => {
                       dot={{ r: 2 }}
                       activeDot={{ r: 4 }}
                     />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <div>
+              <CardTitle>Grid Kw</CardTitle>
+              <CardDescription>Kw exchange with grid over time</CardDescription>
+            </div>
+            <Select 
+              value={timeRange.startsWith('custom:') ? 'custom' : timeRange} 
+              onValueChange={handleTimeRangeChange}
+            >
+              <SelectTrigger className="w-[150px] h-8 text-sm">
+                <SelectValue placeholder="Select timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="last-24h">Last 24 hours</SelectItem>
+                <SelectItem value="last-7d">Last 7 days</SelectItem>
+                <SelectItem value="last-30d">Last 30 days</SelectItem>
+                <SelectItem value="custom">Custom range</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              {isGridLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Skeleton className="h-full w-full" />
+                </div>
+              ) : !gridData?.kwtChartData || gridData.kwtChartData.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-gray-500">No grid data available</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={gridData.kwtChartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                    <XAxis 
+                      dataKey="time" 
+                      tickFormatter={(time) => {
+                        try {
+                          const date = new Date(time);
+                          return date.toLocaleTimeString([], { hour: '2-digit' });
+                        } catch (e) {
+                          return time.split(' ')[1]?.split(':')[0] || time;
+                        }
+                      }}
+                      tick={{ fontSize: 12 }}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12 }}
+                      width={40}
+                    />
+                    <Tooltip 
+                      formatter={(value: any) => [`${value} kW`, undefined]}
+                      labelFormatter={(label) => {
+                        try {
+                          const date = new Date(label);
+                          return date.toLocaleString();
+                        } catch (e) {
+                          return label;
+                        }
+                      }}
+                    />
+                    <Legend />
+                    <Line 
+                      type="linear" 
+                      dataKey="Kw" 
+                      name="Kw" 
+                      stroke="#3b82f6" 
+                      strokeWidth={2}
+                      dot={{ r: 2 }}
+                      activeDot={{ r: 4 }}
+                    />
+                  
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -455,88 +570,7 @@ const GridMonitoring = () => {
         </CardContent>
       </Card>
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Power Quality</CardTitle>
-            <CardDescription>Grid power quality metrics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Voltage Sags (last 30d)</p>
-                <p className="font-medium">2 events</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Voltage Swells (last 30d)</p>
-                <p className="font-medium">0 events</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Power Outages (last 30d)</p>
-                <p className="font-medium">1 event (22 min)</p>
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Grid Stability Rating</p>
-                <p className="font-medium">Good (4.2/5)</p>
-              </div>
-            </div>
-            
-            <div className="h-32">
-              <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500">Detailed power quality analysis coming soon</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Grid Events</CardTitle>
-            <CardDescription>Recent grid events and anomalies</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium">Voltage dip detected</p>
-                    <p className="text-xs text-gray-500">2025-03-18 14:22:05</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-900/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium">Grid outage</p>
-                    <p className="text-xs text-gray-500">2025-03-14 02:15:30</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-900/30">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <div>
-                    <p className="font-medium">Frequency fluctuation</p>
-                    <p className="text-xs text-gray-500">2025-03-10 19:45:12</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    
     </div>
   );
 };

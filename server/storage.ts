@@ -233,7 +233,7 @@ export const storage = {
     // This would require additional sensors - using static data for now
     return { current: 42, max: 80, min: 20 };
   },
-
+  
   async getGridStatus(timeRange = 'last-24h') {
     try {
       // Get the latest grid data for status
@@ -267,22 +267,31 @@ export const storage = {
       const dailyImport = historicalData.reduce((sum, record) => sum + Number(record.kwh_import || 0), 0);
       const dailyExport = historicalData.reduce((sum, record) => sum + Number(record.kwh_export || 0), 0);
       const netBalance = dailyExport - dailyImport;
-      
+      const totalPower = Number(grid1Data.kwt || 0);
+      const totalPowerFactor = Number(grid1Data.pft || 0);
+      const totalVoltage = (Number(grid1Data.v1) + Number(grid1Data.v2) + Number(grid1Data.v3)) / 3;
+      const totalFrequency = Number(grid1Data.hz || 0);
+      const totalEnergy = Number(grid1Data.kwh_export || 0) - Number(grid1Data.kwh_import || 0);
+      const totalApparentPower = Number(grid1Data.kvat || 0);
+      const totalReactivePower = Number(grid1Data.kvart || 0);
+
       // Format chart data
       let chartData = [];
+      let kwtChartData = [];
       if (timeRange === 'last-24h') {
         // Group by hour for 24h view
-        const hourlyData: Record<string, { import: number, export: number, count: number }> = {};
+        const hourlyData: Record<string, { import: number, export: number, kwt: number, count: number }> = {};
         
         historicalData.forEach(record => {
           const hour = new Date(record.time).toLocaleTimeString('en-US', { hour: 'numeric' });
           
           if (!hourlyData[hour]) {
-            hourlyData[hour] = { import: 0, export: 0, count: 0 };
+            hourlyData[hour] = { import: 0, export: 0, kwt: 0, count: 0 };
           }
           
           hourlyData[hour].import += Number(record.kwh_import || 0);
           hourlyData[hour].export += Number(record.kwh_export || 0);
+          hourlyData[hour].kwt += Number(record.kwt || 0);
           hourlyData[hour].count += 1;
         });
         
@@ -291,19 +300,25 @@ export const storage = {
           import: data.import,
           export: data.export
         }));
+
+        kwtChartData = Object.entries(hourlyData).map(([time, data]) => ({
+          time,
+          kwt: data.kwt / data.count
+        }));
       } else {
         // Group by day for 7d or 30d view
-        const dailyData: Record<string, { import: number, export: number }> = {};
+        const dailyData: Record<string, { import: number, export: number, kwt: number }> = {};
         
         historicalData.forEach(record => {
           const day = new Date(record.time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
           
           if (!dailyData[day]) {
-            dailyData[day] = { import: 0, export: 0 };
+            dailyData[day] = { import: 0, export: 0, kwt: 0 };
           }
           
           dailyData[day].import += Number(record.kwh_import || 0);
           dailyData[day].export += Number(record.kwh_export || 0);
+          dailyData[day].kwt += Number(record.kwt || 0);
         });
         
         chartData = Object.entries(dailyData).map(([time, data]) => ({
@@ -311,23 +326,27 @@ export const storage = {
           import: data.import,
           export: data.export
         }));
+
+        kwtChartData = Object.entries(dailyData).map(([time, data]) => ({
+          time,
+          kwt: data.kwt
+        }));
       }
-      
-      // Calculate percentage changes (mock values for demonstration)
-      const importChange = 5.2;
-      const exportChange = 3.8;
       
       return { 
         status: Number(grid1Data.kwt) > 0 ? "Connected" : "Disconnected", 
         lastChecked: grid1Data.time.toISOString(),
         import: dailyImport.toFixed(2),
         export: dailyExport.toFixed(2),
-        importChange,
-        exportChange,
         netBalance: netBalance.toFixed(2),
-        voltage: (Number(grid1Data.v1) + Number(grid1Data.v2) + Number(grid1Data.v3)) / 3 + " V",
-        frequency: "50.1 Hz",
-        chartData
+        voltage: `${totalVoltage.toFixed(2)} V`,
+        frequency: `${totalFrequency.toFixed(2)} Hz`,
+        power: `${totalPower.toFixed(2)} kW`,
+        powerFactor: totalPowerFactor.toFixed(2),
+        energy: `${totalEnergy.toFixed(2)} kWh`,
+        apparentPower: `${totalApparentPower.toFixed(2)} kVA`,
+        chartData,
+        kwtChartData
       };
     } catch (error) {
       console.error('Error fetching grid status:', error);
